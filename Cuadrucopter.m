@@ -1,5 +1,81 @@
+%syms f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 U1 U2 U3 U4 Ixx Iyy Izz
 clear all, close all, clc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+X0 = [0 0 0 0 0 0 0 0 0 0 0 0];
+tspan = [0:0.001:6];
+[t, y] = ode45(@(t,X)nonlinear_function(X),tspan ,X0);
+mystr= ["$\Phi$", "$\dot{\Phi}$", "$\Theta$", "$\dot{\Theta}$", "$\Psi$", "$\dot{\Psi}$", "$Z$", "$\dot{Z}$", "$X$", "$\dot{X}$", "$Y$", "$\dot{Y}$"];
+for i=1:12   
+    subplot (4,3,i);
+    plot (t,y(:,i));
+    title (mystr(i), 'interpreter' , 'latex');
+    axis 'auto y';
+end
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+syms b1 b2 b3 b4 Ixx Iyy Izz ut ux uy U1 U2 U3 U4 a1 a2 a3 m g l X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12
+b1 = l/Ixx;
+b2 = l/Iyy;
+b3 = l/Izz;
+
+ut = cos(X1)*cos(X3);
+ux = cos(X1)*sin(X3)*cos(X5) + sin(X1)*sin(X5);
+uy = cos(X1)*sin(X3)*sin(X5) - sin(X1)*cos(X5);
+
+a1 = (Iyy - Izz)/Ixx;
+a2 = (Izz - Ixx)/Iyy;
+a3 = (Ixx- Iyy)/Izz;
+
+f(1) = X2;
+f(2) = X4*X6*a1 + b1*U2;
+f(3) = X4;
+f(4) = X2*X6*a2+b2*U3;
+f(5) = X6;
+f(6) = X2*X4*a3+b3*U4;
+f(7) = X8;
+f(8) = -g + ut*(1/m)*U1;
+f(9) = X10;
+f(10) = ux*(1/m)*U1;
+f(11) = X12;
+f(12) = uy*(1/m)*U1;
+
+A = sym (zeros (12,12));
+B = sym (zeros (12,4));
+
+for i=1:12
+   A(i,:) = gradient (f(i), [X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12]).';
+end 
+for i=1:12
+   B(i,:) = gradient (f(i), [U1 U2 U3 U4]).';
+end 
+   
+m = 0.506;
+g = 9.8;
+l = 0.235;
+Ixx = 8.12e-5;
+Iyy = 8.12e-5;
+Izz = 6.12e-5;
+U1=-m*g;
+U2=0;
+U3=0;
+U4=0;
+X1=0; X2=0; X3=0; X4=0; X5=pi; X6=0;X7=0; X8=0; X9=0; X10=0; X11=0; X12=0;
+
+
+A = subs(A)
+B = subs(B)
+C =[1 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 1 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 1 0 0 0 0 0 0 0;
+    0 0 0 0 0 0 1 0 0 0 0 0;]
+D = zeros(size(C,1),size(B,2))
+
+[Cm, Om] = ctrl_obs(A,B,C);
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+clear all, close all, clc
+
 g = 9.8;
 m = 0.5;
 l = 0.235;
@@ -9,8 +85,6 @@ Izz = 6.12e-5;
 b1 = l/Ixx;
 b2 = l/Iyy;
 b3 = l/Izz;
-
-
 
 A = [0 1 0 0 0 0 0 0 0 0 0 0; 
      0 0 0 0 0 0 0 0 0 0 0 0;
@@ -47,38 +121,27 @@ A = [0 1 0 0 0 0 0 0 0 0 0 0;
 
 X0 = [0 0.001 0 0 0 0 0 0 0 0 0 0]
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%syms f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 U1 U2 U3 U4 Ixx Iyy Izz
-clear all, close all, clc
-
-X0 = [0 0 0 0 0 0 0 0 0 0 0 0];
-tspan = [0:0.001:6];
-[t, y] = ode45(@(t,X)nonlinear_function(X),tspan ,X0);
-mystr= ["$\Phi$", "$\dot{\Phi}$", "$\Theta$", "$\dot{\Theta}$", "$\Psi$", "$\dot{\Psi}$", "$Z$", "$\dot{Z}$", "$X$", "$\dot{X}$", "$Y$", "$\dot{Y}$"];
-for i=1:12   
-    subplot (4,3,i);
-    plot (t,y(:,i));
-    title (mystr(i), 'interpreter' , 'latex');
-    axis 'auto y';
-end
-%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    OBS & CTRL    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    OBS & CTRL    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 [Cm, Om] = ctrl_obs(A,B,C);
 sys=ss(A,B,C,D);
 
-initial(sys,X0,30);
+%initial(sys,X0,30);
+eig(A)
+k = pole (sys)
 
-A_ = A(1:6,1:6)
-B_ = B(1:6,1:end)
-C_ = C(1:end,1:6)
 
-[Cm, Om] = ctrl_obs(A_,B_,C_);
-
-sys=ss(A_,B_,C_,D);
-
-ctrl_gram = det(gram(sys,'c'))
-obs_gram = det(gram(sys,'o'))
+% A_ = A(1:6,1:6)
+% B_ = B(1:6,1:end)
+% C_ = C(1:end,1:6)
+% 
+% [Cm, Om] = ctrl_obs(A_,B_,C_);
+% 
+% sys=ss(A_,B_,C_,D);
+% 
+% ctrl_gram = det(gram(sys,'c'))
+% obs_gram = det(gram(sys,'o'))
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    LQR    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
