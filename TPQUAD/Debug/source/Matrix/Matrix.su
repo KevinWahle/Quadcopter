@@ -1,0 +1,9 @@
+../source/Matrix/Matrix.c:51:6:initMatrix	8	static
+../source/Matrix/Matrix.c:57:6:increase_bright	8	static
+../source/Matrix/Matrix.c:63:6:decrease_bright	8	static
+../source/Matrix/Matrix.c:68:9:get_bright	4	static
+../source/Matrix/Matrix.c:73:6:fullMatrixON	40	static
+../source/Matrix/Matrix.c:94:6:setColumnsMatrix	40	static
+../source/Matrix/Matrix.c:144:6:setColumnMatrix	40	static
+../source/Matrix/Matrix.c:184:6:setLedMatrix	32	static
+../source/Matrix/Matrix.c:203:6:clearMatrix	24	static

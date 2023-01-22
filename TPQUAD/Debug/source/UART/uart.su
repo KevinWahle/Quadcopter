@@ -1,0 +1,13 @@
+../SDK/CMSIS/core_cm4.h:1678:22:__NVIC_EnableIRQ	16	static
+../source/UART/uart.c:86:6:uartInit	40	static
+../source/UART/uart.c:160:6:uartIsRxMsg	16	static
+../source/UART/uart.c:170:9:uartGetRxMsgLength	16	static
+../source/UART/uart.c:182:9:uartReadMsg	32	static
+../source/UART/uart.c:204:9:uartWriteMsg	16	static
+../source/UART/uart.c:223:6:uartIsTxMsgComplete	16	static
+../source/UART/uart.c:234:13:UART_Rx_Tx_IRQ	24	static
+../source/UART/uart.c:254:9:UART0_RX_TX_IRQHandler	16	static
+../source/UART/uart.c:266:9:UART1_RX_TX_IRQHandler	16	static
+../source/UART/uart.c:278:9:UART2_RX_TX_IRQHandler	16	static
+../source/UART/uart.c:290:9:UART3_RX_TX_IRQHandler	16	static
+../source/UART/uart.c:302:9:UART4_RX_TX_IRQHandler	16	static

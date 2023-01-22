@@ -1,0 +1,13 @@
+../SDK/CMSIS/core_cm4.h:1678:22:__NVIC_EnableIRQ	16	static
+../source/FTM/FTM.c:125:6:FTMReset	16	static
+../source/FTM/FTM.c:134:20:FTMGetCnVAddress	16	static
+../source/FTM/FTM.c:148:6:PWMInit	32	static
+../source/FTM/FTM.c:189:6:PWMStart	40	static
+../source/FTM/FTM.c:201:6:PWMFromPtr	24	static
+../source/FTM/FTM.c:224:6:ICInit	32	static
+../source/FTM/FTM.c:293:12:ICGetCont	24	static
+../source/FTM/FTM.c:312:6:ICisEdge	24	static
+../source/FTM/FTM.c:329:6:ICReset	16	static
+../source/FTM/FTM.c:345:6:FTM_IRQHandler	64	static
+../source/FTM/FTM.c:405:9:FTM0_IRQHandler	48	static
+../source/FTM/FTM.c:420:9:FTM1_IRQHandler	40	static

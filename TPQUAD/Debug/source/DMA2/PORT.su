@@ -1,0 +1,16 @@
+../SDK/CMSIS/core_cm4.h:1678:22:__NVIC_EnableIRQ	16	static
+../source/DMA2/PORT.c:4:6:PORT_Init	8	static
+../source/DMA2/PORT.c:37:6:PORT_SetPullResistorMode	24	static
+../source/DMA2/PORT.c:43:6:PORT_SetPullUpMode	24	static
+../source/DMA2/PORT.c:49:6:PORT_SetOpenDrainMode	24	static
+../source/DMA2/PORT.c:55:6:PORT_SetPassiveFilterMode	24	static
+../source/DMA2/PORT.c:61:6:PORT_SetSlowSlewRateMode	24	static
+../source/DMA2/PORT.c:67:6:PORT_SetHighDriveStrengthMode	24	static
+../source/DMA2/PORT.c:73:6:PORT_SetMuxMode	24	static
+../source/DMA2/PORT.c:79:6:PORT_SetInterruptMode	24	static
+../source/DMA2/PORT.c:85:6:PORT_IsInterruptPending	16	static
+../source/DMA2/PORT.c:90:6:PORT_ClearInterruptFlag	16	static
+../source/DMA2/PORT.c:95:6:PORT_Configure	24	static
+../source/DMA2/PORT.c:115:6:PORT_Configure2	24	static
+../source/DMA2/PORT.c:127:13:PORT_GetPortFlags	16	static
+../source/DMA2/PORT.c:132:6:PORT_ClearPortFlags	16	static

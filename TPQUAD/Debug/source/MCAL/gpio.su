@@ -1,0 +1,12 @@
+../SDK/CMSIS/core_cm4.h:1678:22:__NVIC_EnableIRQ	16	static
+../source/MCAL/gpio.c:41:6:setDigitalFilter	24	static
+../source/MCAL/gpio.c:59:6:gpioMode	32	static
+../source/MCAL/gpio.c:114:6:gpioIRQ	24	static
+../source/MCAL/gpio.c:165:6:gpioWrite	24	static
+../source/MCAL/gpio.c:186:6:gpioToggle	24	static
+../source/MCAL/gpio.c:201:6:gpioRead	32	static
+../source/MCAL/gpio.c:224:9:PORTA_IRQHandler	24	static
+../source/MCAL/gpio.c:234:9:PORTB_IRQHandler	24	static
+../source/MCAL/gpio.c:244:9:PORTC_IRQHandler	24	static
+../source/MCAL/gpio.c:254:9:PORTD_IRQHandler	24	static
+../source/MCAL/gpio.c:264:9:PORTE_IRQHandler	24	static

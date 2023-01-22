@@ -1,0 +1,4 @@
+../source/SpectrumAnalyzer/SpectrumAnalyzer.c:63:6:setAnalyzer	16	static
+../source/SpectrumAnalyzer/SpectrumAnalyzer.c:95:6:initEqualizer	32	static
+../source/SpectrumAnalyzer/SpectrumAnalyzer.c:122:6:setUpFilter	40	static
+../source/SpectrumAnalyzer/SpectrumAnalyzer.c:150:6:blockEqualizer	24	static
