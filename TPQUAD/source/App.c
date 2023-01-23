@@ -66,7 +66,7 @@ void App_Run (void)
 		// double zGyro = (double)gyroData[2]/32767.0 * 250;
 		int2doubleGyro(Gyro, gyroData);
 		timerDelay(TIMER_US2TICKS(2000));
-		sendUartMessage(Gyro);
+		sendUartMessage(Acc);
 	}
 
 }

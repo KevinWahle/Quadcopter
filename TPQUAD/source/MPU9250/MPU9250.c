@@ -477,14 +477,14 @@ void calibrateMPU9250()
 	for(uint16_t i=0; i < AMOUNT_OF_SAMPLES; i++)
 	{
 		int16_t tmpAcc[3];
-		readGyroData(tmpAcc);
+		readAccelData(tmpAcc);
 		accelPartialSum[0] += tmpAcc[0];
 		accelPartialSum[1] += tmpAcc[1];
 		accelPartialSum[2] += tmpAcc[2];
 	}
 	accelPartialSum[0] /= -AMOUNT_OF_SAMPLES;
 	accelPartialSum[1] /= -AMOUNT_OF_SAMPLES;
-	accelPartialSum[2] = (32767/2) - (accelPartialSum[2]/AMOUNT_OF_SAMPLES) ; // Hay que restar la gravedad.
+	accelPartialSum[2] = (32767.0/2.0)-(accelPartialSum[2]/AMOUNT_OF_SAMPLES) ; // Hay que restar la gravedad.
 
 	// =========== X adjustment ==================
 	// writeSize = 2;
