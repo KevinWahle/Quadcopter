@@ -272,7 +272,7 @@
 					<fileInfo id="com.crt.advproject.config.exe.debug.1284265667.1291173385" name="FTM.h" rcbsApplicability="disable" resourcePath="source/FTM/FTM.h" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SDK"/>
-						<entry excluding="MPU9250|DMA2|DAC|DAC/DAC_hal.c|I2Cm/I2C_Test.c|Display_I2C/DisplayTest.c|Display_I2C/Display.c|Keypad/keypadTest.c|MP3Dec|deepSleep|Matrix/MatrixTest.c|FileSystem|FTM/FTM.h|DMA/DMA.c|SpectrumAnalyzer/SectrumTest.c|FSM_routines.c|const.h|AppVer2.c|App2.c|TestVersion2.c|TestParte1.c|fskModulator/fskModulatorTest.c|ADC/ADC_test.c|FTM/FTMTest.c|char2uart/char2uart_test.c|CMP/CMP_IC_Test.c|CMP/CMP_test.c|PIT/PITTest.c|DAC/DAC_test.c|DMA/DMA.h|test.c|UART/SENS_UART_TEST.c|CAN/CANTest.c|SPI/SPITest.c|SENS_UART_TEST.c|UART/uartTest.c|SPI/App.c|I2C_TEST.c" flags="LOCAL|VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="source"/>
+						<entry excluding="DMA2|DAC|DAC/DAC_hal.c|I2Cm/I2C_Test.c|Display_I2C/DisplayTest.c|Display_I2C/Display.c|Keypad/keypadTest.c|MP3Dec|deepSleep|Matrix/MatrixTest.c|FileSystem|FTM/FTM.h|DMA/DMA.c|SpectrumAnalyzer/SectrumTest.c|FSM_routines.c|const.h|AppVer2.c|App2.c|TestVersion2.c|TestParte1.c|fskModulator/fskModulatorTest.c|ADC/ADC_test.c|FTM/FTMTest.c|char2uart/char2uart_test.c|CMP/CMP_IC_Test.c|CMP/CMP_test.c|PIT/PITTest.c|DAC/DAC_test.c|DMA/DMA.h|test.c|UART/SENS_UART_TEST.c|CAN/CANTest.c|SPI/SPITest.c|SENS_UART_TEST.c|UART/uartTest.c|SPI/App.c|I2C_TEST.c" flags="LOCAL|VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="source"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

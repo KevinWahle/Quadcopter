@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "i2cm.h": "c",
+        "xmemory": "c",
+        "locale": "c",
+        "thread": "c",
+        "xlocale": "c",
+        "xlocmes": "c",
+        "xlocmon": "c",
+        "xlocnum": "c",
+        "xloctime": "c",
+        "timer.h": "c"
+    }
+}

@@ -23,6 +23,7 @@ source/CMP \
 source/FTM \
 source/I2Cm \
 source/MCAL \
+source/MPU9250 \
 source/PIT \
 source/SPI \
 source/UART \

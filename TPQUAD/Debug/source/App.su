@@ -1,2 +1,3 @@
-../source/App.c:26:6:App_Init	4	static
-../source/App.c:35:6:App_Run	4	static
+../source/App.c:33:6:App_Init	16	static
+../source/App.c:43:6:App_Run	64	static
+../source/App.c:79:13:sendUartMessage	120	static

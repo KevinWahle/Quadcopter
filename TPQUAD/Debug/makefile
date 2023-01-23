@@ -14,6 +14,7 @@ RM := rm -rf
 -include source/UART/subdir.mk
 -include source/SPI/subdir.mk
 -include source/PIT/subdir.mk
+-include source/MPU9250/subdir.mk
 -include source/MCAL/subdir.mk
 -include source/I2Cm/subdir.mk
 -include source/FTM/subdir.mk
