@@ -9,6 +9,10 @@
         "xlocmon": "c",
         "xlocnum": "c",
         "xloctime": "c",
-        "timer.h": "c"
+        "timer.h": "c",
+        "*.ipp": "c",
+        "cmath": "c",
+        "math.h": "c",
+        "stdbool.h": "c"
     }
 }
