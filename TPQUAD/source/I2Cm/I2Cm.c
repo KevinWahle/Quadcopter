@@ -116,7 +116,7 @@ void I2CmInit(I2CPort_t id) {
 // I2C Master config
 
 	// Clock Divider
-	I2CPtrs[id%I2C_COUNT]->F = I2C_F_ICR(0x2B);		// Divider to 512 with no multiplier	(SCL: 100k)
+	I2CPtrs[id%I2C_COUNT]->F = I2C_F_ICR(0x1D);		// Divider to 512 with no multiplier	(SCL: 100k)
 	//I2CPtrs[id%I2C_COUNT]->F = I2C_F_ICR(0x3F) | I2C_F_MULT(2);        // Divider to 3840 with 4 multiplier    (SCL: 3.26k)
 
 	// Enable I2C. No Enable Master Mode and interrupts yet

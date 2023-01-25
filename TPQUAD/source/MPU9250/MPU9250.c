@@ -282,7 +282,7 @@ void initMPU9250(){
 	I2CmStartTransaction(I2C_ACC, MPU9250_ADDRESS, writeBuffer, writeSize, readBuffer, readSize);
 	while(isI2CBusy(I2C_ACC));
 	readBuffer[0] = readBuffer[0] & ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
-	readBuffer[0] = readBuffer[0] | 0x03;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
+	readBuffer[0] = readBuffer[0] | 0x05;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
 	//writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, readBuffer[0]); // Write new ACCEL_CONFIG2 register value
 	writeSize = 2;
 	readSize = 0;
@@ -486,6 +486,7 @@ void calibrateMPU9250()
 	accelPartialSum[1] /= -AMOUNT_OF_SAMPLES;
 	accelPartialSum[2] = (32767.0/2.0)-(accelPartialSum[2]/AMOUNT_OF_SAMPLES) ; // Hay que restar la gravedad.
 
+
 	// =========== X adjustment ==================
 	// writeSize = 2;
 	// readSize = 0;
@@ -522,10 +523,23 @@ void calibrateMPU9250()
 	// ===========================================
 
 }
+
+double calibrateGravity(void){
+	double partialSum = 0;
+	int16_t tmp[3];
+	double tmpG[3];
+	for(uint16_t i=0; i < AMOUNT_OF_SAMPLES; i++){
+		readAccelData(tmp);
+		int2doubleAcc(tmpG, tmp);
+		partialSum += tmpG[2]*9.81; // 1G -> 9.81
+	}
+	return partialSum/AMOUNT_OF_SAMPLES;
+}
+
 void int2doubleGyro(double* destination, int16_t* rawData)
 {
 	destination[0] = ((double)(rawData[0] + gyroPartialSum[0]))/32767.0 * 250;
-	destination[1] = ((double)(rawData[1] + gyroPartialSum[1]))/32767.0 * 250;
+	destination[1] = -((double)(rawData[1] + gyroPartialSum[1]))/32767.0 * 250;
 	destination[2] = ((double)(rawData[2] + gyroPartialSum[2]))/32767.0 * 250;	
 }
 void int2doubleAcc(double* destination, int16_t* rawData)

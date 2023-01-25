@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include "timer/timer.h"
 #include <math.h>
-
+#include "MCAL/gpio.h"
 
 #define UART_ID			0
 #define UART_BAUDRATE	115200
@@ -43,6 +43,8 @@ static void getZposition(double * Angles, double* body_ACC_coordinates, double* 
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init (void)
 {
+	gpioMode (PORTNUM2PIN(PB,2), OUTPUT);
+	gpioWrite(PORTNUM2PIN(PB,2), LOW);
 	uart_cfg_t cfg = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
 	uartInit(UART_ID, cfg);
 }
@@ -56,6 +58,8 @@ double lastAngles_rad[3];
 
 double lastVZ[3];
 double lastZ[3];
+
+double gravityMean;
 /* Función que se llama constantemente en un ciclo infinito */
 void App_Run (void)
 {
@@ -68,7 +72,7 @@ void App_Run (void)
 	resetMPU9250();
 	initMPU9250();
 	calibrateMPU9250();
-
+    gravityMean = calibrateGravity();
 	// initial conditions 
 
 	lastAngles_rad[0] = 0;
@@ -80,18 +84,22 @@ void App_Run (void)
 	tim_id_t TS_timer;
 	TS_timer = timerGetId();
 
+	timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
 	while(1){
- 
-		timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
-		//readAccelData(accelData);
-		//int2doubleAcc(Acc, accelData);  // Acc -> [G]
-		//Acc[0] = Acc[0]*GRAVITY;
-		//Acc[1] = Acc[1]*GRAVITY;
-		//Acc[2] = Acc[2]*GRAVITY;  // Acc -> [m/s^2]
-
-		readGyroData(gyroData); // gryData -> [G]
+ 	/*
+		double Acc_G[3];
+		readAccelData(accelData);
+		int2doubleAcc(Acc, accelData);  // Acc -> [G]
+		Acc_G[0] = Acc[0];
+		Acc_G[1] = Acc[1];
+		Acc_G[2] = Acc[2];
+		Acc[0] = Acc[0]*gravityMean;
+		Acc[1] = Acc[1]*gravityMean;
+		Acc[2] = Acc[2]*gravityMean;  // Acc -> [m/s^2]
+	*/	
+		readGyroData(gyroData); // raw data
 		int2doubleGyro(Gyro, gyroData);  // Gyro [deg/s]
-
+		
 		Gyro[0] = Gyro[0] * DEG2RAD;
 		Gyro[1] = Gyro[1] * DEG2RAD;
 		Gyro[2] = Gyro[2] * DEG2RAD; //  [rad/s]
@@ -104,12 +112,14 @@ void App_Run (void)
 
 		//getZposition(lastAngles_rad, Acc, lastZ, lastVZ, Ts);
 
-
 		newAngles_rad[0] = newAngles_rad[0] * RAD2DEG;
 		newAngles_rad[1] = newAngles_rad[1] * RAD2DEG;
 		newAngles_rad[2] = newAngles_rad[2] * RAD2DEG;
 		
+		gpioWrite(PORTNUM2PIN(PB,2), LOW);
 		while(!timerExpired(TS_timer));
+		gpioWrite(PORTNUM2PIN(PB,2), HIGH);
+		timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
 		sendUartMessage3Channels(newAngles_rad);  // esta en m/s^2
 		//timerDelay(TIMER_US2TICKS(5000));
 	}
@@ -120,6 +130,7 @@ void App_Run (void)
                         LOCAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
+
 
 
 static void getAnglesAcc(double* Acc, double* Angles)
@@ -150,7 +161,12 @@ static void getZposition(double * Angles, double* body_ACC_coordinates, double* 
 						 body_ACC_coordinates[1]*cos(Angles[1])*sin(Angles[0]) + 
 						 body_ACC_coordinates[2]*cos(Angles[1])*cos(Angles[0]);
 
-	(*lastVZ) = (*lastVZ) + Ts*(z_earth_acc - GRAVITY);
+	double aux  = (z_earth_acc - gravityMean);
+	if (aux < 0.008)
+	{
+		aux = 0;
+	}
+	(*lastVZ) = (*lastVZ) + Ts*aux; // 9,815   0,005  Acc   
 	(*lastZ) = (*lastZ) + Ts*(*lastVZ);
 }
 
@@ -167,21 +183,24 @@ newAngles[2] = yaw ~ psi (de x a y)
 // TODO: pasar argumentos en radianes (estaban en deg cuando se calcularon)
 static void getAnglesGyro(double* GyroRates_rad, double* lastAngles_rad, double* newAngles_rad, double Ts){
 	 	 
-	double phi_dot = GyroRates_rad[0] + 
-					 GyroRates_rad[1]*sin(lastAngles_rad[0])*tan(lastAngles_rad[1]) + 
+	double phi_dot = GyroRates_rad[0] - 
+					 GyroRates_rad[1]*sin(lastAngles_rad[0])*tan(lastAngles_rad[1]) - 
 					 GyroRates_rad[2]*cos(lastAngles_rad[0])*tan(lastAngles_rad[1]);
 
 	double theta_dot = GyroRates_rad[1]*cos(lastAngles_rad[0]) - 
 					   GyroRates_rad[2]*sin(lastAngles_rad[0]);
 
 	//psidot=(qsin(0)-rcos(0))*sec(1)
-	double psi_dot = (-GyroRates_rad[1]*sin(lastAngles_rad[0]) - 
+	double psi_dot = (GyroRates_rad[1]*sin(lastAngles_rad[0]) + 
 					  GyroRates_rad[2]*cos(lastAngles_rad[0]))/cos(lastAngles_rad[1]);
 
 	newAngles_rad[0] = lastAngles_rad[0] + Ts * phi_dot;
 	newAngles_rad[1] = lastAngles_rad[1] + Ts * theta_dot;
 	newAngles_rad[2] = lastAngles_rad[2] + Ts * psi_dot;
 }
+
+
+
 
 static void sendUartMessage3Channels(double* msg1)
 {
