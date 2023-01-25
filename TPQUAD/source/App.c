@@ -86,7 +86,7 @@ void App_Run (void)
 
 	timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
 	while(1){
- 	/*
+ 	
 		double Acc_G[3];
 		readAccelData(accelData);
 		int2doubleAcc(Acc, accelData);  // Acc -> [G]
@@ -96,7 +96,7 @@ void App_Run (void)
 		Acc[0] = Acc[0]*gravityMean;
 		Acc[1] = Acc[1]*gravityMean;
 		Acc[2] = Acc[2]*gravityMean;  // Acc -> [m/s^2]
-	*/	
+		
 		readGyroData(gyroData); // raw data
 		int2doubleGyro(Gyro, gyroData);  // Gyro [deg/s]
 		
@@ -120,7 +120,7 @@ void App_Run (void)
 		while(!timerExpired(TS_timer));
 		gpioWrite(PORTNUM2PIN(PB,2), HIGH);
 		timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
-		sendUartMessage3Channels(newAngles_rad);  // esta en m/s^2
+		sendUartMessage3Channels(Acc);  // esta en m/s^2
 		//timerDelay(TIMER_US2TICKS(5000));
 	}
 }
