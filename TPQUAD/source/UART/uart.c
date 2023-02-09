@@ -263,17 +263,17 @@ __ISR__ UART0_RX_TX_IRQHandler(void){
 #endif
 }
 
-__ISR__ UART1_RX_TX_IRQHandler(void){
-#ifdef ENABLE_TP
-	gpioWrite(TP_PIN, HIGH);
-#endif
-
-	UART_Rx_Tx_IRQ(1);
-
-#ifdef ENABLE_TP
-	gpioWrite(TP_PIN, LOW);
-#endif
-}
+//__ISR__ UART1_RX_TX_IRQHandler(void){
+//#ifdef ENABLE_TP
+//	gpioWrite(TP_PIN, HIGH);
+//#endif
+//
+//	UART_Rx_Tx_IRQ(1);
+//
+//#ifdef ENABLE_TP
+//	gpioWrite(TP_PIN, LOW);
+//#endif
+//}
 
 __ISR__ UART2_RX_TX_IRQHandler(void){
 #ifdef ENABLE_TP
