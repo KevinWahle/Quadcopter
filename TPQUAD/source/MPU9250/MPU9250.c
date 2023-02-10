@@ -186,7 +186,7 @@ uint8_t Ascale = AFS_2G;     // AFS_2G, AFS_4G, AFS_8G, AFS_16G
 uint8_t Gscale = GFS_250DPS; // GFS_250DPS, GFS_500DPS, GFS_1000DPS, GFS_2000DPS
 uint8_t Mscale = MFS_16BITS; // MFS_14BITS or MFS_16BITS, 14-bit or 16-bit magnetometer resolution
 uint8_t Mmode = 0x06;        // Either 8 Hz 0x02) or 100 Hz (0x06) magnetometer data ODR  
-float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
+double aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
 
 uint8_t writeBuffer[4];
 uint8_t writeSize;
@@ -224,7 +224,7 @@ void initMPU9250(){
 	writeSize = 2;
 	readSize = 0;
 	writeBuffer[0] = CONFIG;
-	writeBuffer[1] = 0x03;
+	writeBuffer[1] = 0x01;
 	I2CmStartTransaction(I2C_ACC, MPU9250_ADDRESS, writeBuffer, writeSize, NULL, readSize);
 	while(isI2CBusy(I2C_ACC));
 	// Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
@@ -282,7 +282,7 @@ void initMPU9250(){
 	I2CmStartTransaction(I2C_ACC, MPU9250_ADDRESS, writeBuffer, writeSize, readBuffer, readSize);
 	while(isI2CBusy(I2C_ACC));
 	readBuffer[0] = readBuffer[0] & ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
-	readBuffer[0] = readBuffer[0] | 0x05;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
+	readBuffer[0] = 0x06;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
 	//writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, readBuffer[0]); // Write new ACCEL_CONFIG2 register value
 	writeSize = 2;
 	readSize = 0;
@@ -364,7 +364,7 @@ void resetMPU9250() {
 	//wait(0.1);
   }
 
-void initAK8963(float * destination)
+void initAK8963(double * destination)
 {
   // First extract the factory calibration for each magnetometer axis
   uint8_t rawData[3];  // x/y/z gyro calibration data stored here
@@ -395,9 +395,9 @@ void initAK8963(float * destination)
 	I2CmStartTransaction(I2C_ACC, MPU9250_ADDRESS, writeBuffer, writeSize, rawData, readSize);
 	while(isI2CBusy(I2C_ACC));
 
-	destination[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
-	destination[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
-	destination[2] =  (float)(rawData[2] - 128)/256.0f + 1.0f; 
+	destination[0] =  (double)(rawData[0] - 128)/256.0f + 1.0f;   // Return x-axis sensitivity adjustment values, etc.
+	destination[1] =  (double)(rawData[1] - 128)/256.0f + 1.0f;
+	destination[2] =  (double)(rawData[2] - 128)/256.0f + 1.0f;
 
 //   writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer  
 //   wait(0.01);
@@ -539,8 +539,8 @@ double calibrateGravity(void){
 void int2doubleGyro(double* destination, int16_t* rawData)
 {
 	destination[0] = ((double)(rawData[0] + gyroPartialSum[0]))/32767.0 * 250;
-	destination[1] = -((double)(rawData[1] + gyroPartialSum[1]))/32767.0 * 250;
-	destination[2] = ((double)(rawData[2] + gyroPartialSum[2]))/32767.0 * 250;	
+	destination[1] = ((double)(rawData[1] + gyroPartialSum[1]))/32767.0 * 250;
+	destination[2] = ((double)(rawData[2] + gyroPartialSum[2]))/32767.0 * 250;
 }
 void int2doubleAcc(double* destination, int16_t* rawData)
 {
@@ -550,7 +550,7 @@ void int2doubleAcc(double* destination, int16_t* rawData)
 }
 // Function which accumulates gyro and accelerometer data after device initialization. It calculates the average
 // of the at-rest readings and then loads the resulting offsets into accelerometer and gyro bias registers.
-// void calibrateMPU9250(float * dest1, float * dest2)
+// void calibrateMPU9250(double * dest1, double * dest2)
 // {  
 //   uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
 //   uint16_t ii, packet_count, fifo_count;
@@ -639,9 +639,9 @@ void int2doubleAcc(double* destination, int16_t* rawData)
 //   writeByte(MPU9250_ADDRESS, ZG_OFFSET_H, data[4]);
 //   writeByte(MPU9250_ADDRESS, ZG_OFFSET_L, data[5]);
 // */
-//   dest1[0] = (float) gyro_bias[0]/(float) gyrosensitivity; // construct gyro bias in deg/s for later manual subtraction
-//   dest1[1] = (float) gyro_bias[1]/(float) gyrosensitivity;
-//   dest1[2] = (float) gyro_bias[2]/(float) gyrosensitivity;
+//   dest1[0] = (double) gyro_bias[0]/(double) gyrosensitivity; // construct gyro bias in deg/s for later manual subtraction
+//   dest1[1] = (double) gyro_bias[1]/(double) gyrosensitivity;
+//   dest1[2] = (double) gyro_bias[2]/(double) gyrosensitivity;
 
 // // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
 // // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -690,9 +690,9 @@ void int2doubleAcc(double* destination, int16_t* rawData)
 //   writeByte(MPU9250_ADDRESS, ZA_OFFSET_L, data[5]);
 // */
 // // Output scaled accelerometer biases for manual subtraction in the main program
-//    dest2[0] = (float)accel_bias[0]/(float)accelsensitivity; 
-//    dest2[1] = (float)accel_bias[1]/(float)accelsensitivity;
-//    dest2[2] = (float)accel_bias[2]/(float)accelsensitivity;
+//    dest2[0] = (double)accel_bias[0]/(double)accelsensitivity;
+//    dest2[1] = (double)accel_bias[1]/(double)accelsensitivity;
+//    dest2[2] = (double)accel_bias[2]/(double)accelsensitivity;
 // }
 
 

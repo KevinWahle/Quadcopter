@@ -22,6 +22,7 @@ source/CAN \
 source/CMP \
 source/FTM \
 source/I2Cm \
+source/Kalman \
 source/MCAL \
 source/MPU9250 \
 source/PIT \
@@ -29,5 +30,6 @@ source/SPI \
 source/UART \
 source/buffer \
 source/event_queue \
+source/matrixOperations.h \
 source/timer \
 

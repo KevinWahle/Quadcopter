@@ -61,7 +61,7 @@
 								<option id="com.crt.advproject.cpp.config.349862160" name="Obsolete (Config)" superClass="com.crt.advproject.cpp.config" useByScannerDiscovery="false"/>
 								<option id="com.crt.advproject.cpp.store.579841754" name="Obsolete (Store)" superClass="com.crt.advproject.cpp.store" useByScannerDiscovery="false"/>
 							</tool>
-							<tool id="com.crt.advproject.gcc.exe.debug.1546198014" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
+							<tool command="arm-none-eabi-gcc" id="com.crt.advproject.gcc.exe.debug.1546198014" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
 								<option id="com.crt.advproject.gcc.thumb.1561630564" name="Thumb mode" superClass="com.crt.advproject.gcc.thumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.crt.advproject.gcc.arch.396651152" name="Architecture" superClass="com.crt.advproject.gcc.arch" useByScannerDiscovery="false" value="com.crt.advproject.gcc.target.cm4" valueType="enumerated"/>
 								<option id="com.crt.advproject.c.misc.dialect.1584564001" name="Language standard" superClass="com.crt.advproject.c.misc.dialect" useByScannerDiscovery="true"/>
@@ -268,11 +268,28 @@
 							<tool id="com.crt.advproject.tool.debug.debug.354527928" name="MCU Debugger" superClass="com.crt.advproject.tool.debug.debug"/>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="com.crt.advproject.config.exe.debug.1284265667.1015898759" name="/" resourcePath="source/Kalman">
+						<toolChain id="com.crt.advproject.toolchain.exe.debug.1304978512" name="NXP MCU Tools" superClass="com.crt.advproject.toolchain.exe.debug" unusedChildren="">
+							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.debug" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.exe.debug"/>
+							<tool id="com.crt.advproject.cpp.exe.debug.1922093285" name="MCU C++ Compiler" superClass="com.crt.advproject.cpp.exe.debug.43243261"/>
+							<tool id="com.crt.advproject.gcc.exe.debug.1197121802" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug.1546198014">
+								<option id="com.crt.advproject.gcc.exe.debug.option.optimization.level.1873027253" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.debug.option.optimization.level" useByScannerDiscovery="true" value="gnu.c.optimization.level.most" valueType="enumerated"/>
+								<inputType id="com.crt.advproject.compiler.input.110120943" superClass="com.crt.advproject.compiler.input"/>
+							</tool>
+							<tool id="com.crt.advproject.gas.exe.debug.847728471" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.debug.1668398447">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.310504942" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+								<inputType id="com.crt.advproject.assembler.input.463891853" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
+							</tool>
+							<tool id="com.crt.advproject.link.cpp.exe.debug.365515296" name="MCU C++ Linker" superClass="com.crt.advproject.link.cpp.exe.debug.318857395"/>
+							<tool id="com.crt.advproject.link.exe.debug.1565651365" name="MCU Linker" superClass="com.crt.advproject.link.exe.debug.1389373576"/>
+							<tool id="com.crt.advproject.tool.debug.debug.1571879801" name="MCU Debugger" superClass="com.crt.advproject.tool.debug.debug.354527928"/>
+						</toolChain>
+					</folderInfo>
 					<fileInfo id="com.crt.advproject.config.exe.debug.1284265667.1194697540" name="DMA.h" rcbsApplicability="disable" resourcePath="source/DMA/DMA.h" toolsToInvoke=""/>
 					<fileInfo id="com.crt.advproject.config.exe.debug.1284265667.1291173385" name="FTM.h" rcbsApplicability="disable" resourcePath="source/FTM/FTM.h" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SDK"/>
-						<entry excluding="i2c2|DMA2|DAC|DAC/DAC_hal.c|I2Cm/I2C_Test.c|Display_I2C/DisplayTest.c|Display_I2C/Display.c|Keypad/keypadTest.c|MP3Dec|deepSleep|Matrix/MatrixTest.c|FileSystem|FTM/FTM.h|DMA/DMA.c|SpectrumAnalyzer/SectrumTest.c|FSM_routines.c|const.h|AppVer2.c|App2.c|TestVersion2.c|TestParte1.c|fskModulator/fskModulatorTest.c|ADC/ADC_test.c|FTM/FTMTest.c|char2uart/char2uart_test.c|CMP/CMP_IC_Test.c|CMP/CMP_test.c|PIT/PITTest.c|DAC/DAC_test.c|DMA/DMA.h|test.c|UART/SENS_UART_TEST.c|CAN/CANTest.c|SPI/SPITest.c|SENS_UART_TEST.c|UART/uartTest.c|SPI/App.c|I2C_TEST.c" flags="LOCAL|VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="source"/>
+						<entry excluding="codegen|imuFilter/examples|i2c2|DMA2|DAC|DAC/DAC_hal.c|I2Cm/I2C_Test.c|Display_I2C/DisplayTest.c|Display_I2C/Display.c|Keypad/keypadTest.c|MP3Dec|deepSleep|Matrix/MatrixTest.c|FileSystem|FTM/FTM.h|DMA/DMA.c|SpectrumAnalyzer/SectrumTest.c|FSM_routines.c|const.h|AppVer2.c|App2.c|TestVersion2.c|TestParte1.c|fskModulator/fskModulatorTest.c|ADC/ADC_test.c|FTM/FTMTest.c|char2uart/char2uart_test.c|CMP/CMP_IC_Test.c|CMP/CMP_test.c|PIT/PITTest.c|DAC/DAC_test.c|DMA/DMA.h|test.c|UART/SENS_UART_TEST.c|CAN/CANTest.c|SPI/SPITest.c|SENS_UART_TEST.c|UART/uartTest.c|SPI/App.c|I2C_TEST.c" flags="LOCAL|VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="source"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -551,21 +568,6 @@
 		<project id="K64F_Template.null.1684971455" name="K64F_Template" projectType="com.crt.advproject.projecttype.exe"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.release.1383020521;com.crt.advproject.config.exe.release.1383020521.;com.crt.advproject.gcc.exe.release.626500938;com.crt.advproject.compiler.input.1168476058">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.release.1383020521;com.crt.advproject.config.exe.release.1383020521.;com.crt.advproject.gas.exe.release.1829217656;com.crt.advproject.assembler.input.59218182">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.debug.1284265667;com.crt.advproject.config.exe.debug.1284265667.;com.crt.advproject.gcc.exe.debug.1546198014;com.crt.advproject.compiler.input.1117565474">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.debug.1284265667;com.crt.advproject.config.exe.debug.1284265667.;com.crt.advproject.gas.exe.debug.1668398447;com.crt.advproject.assembler.input.1244626712">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
-		</scannerConfigBuildInfo>
-	</storageModule>
 	<storageModule moduleId="com.crt.config">
 		<projectStorage>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#13;
 &lt;TargetConfig&gt;&#13;
@@ -578,10 +580,10 @@
 &lt;vendor&gt;NXP&lt;/vendor&gt;&#13;
 &lt;memory can_program="true" id="Flash" is_ro="true" size="1024" type="Flash"/&gt;&#13;
 &lt;memory id="RAM" size="256" type="RAM"/&gt;&#13;
-&lt;memoryInstance derived_from="Flash" driver="FTFE_4K.cfx" id="PROGRAM_FLASH" location="0x00000000" size="0x00100000"/&gt;&#13;
-&lt;memoryInstance derived_from="RAM" id="SRAM_UPPER" location="0x20000000" size="0x00030000"/&gt;&#13;
-&lt;memoryInstance derived_from="RAM" id="SRAM_LOWER" location="0x1fff0000" size="0x00010000"/&gt;&#13;
-&lt;memoryInstance derived_from="RAM" id="FLEX_RAM" location="0x14000000" size="0x00001000"/&gt;&#13;
+&lt;memoryInstance derived_from="Flash" driver="FTFE_4K.cfx" edited="true" id="PROGRAM_FLASH" location="0x0" size="0x100000"/&gt;&#13;
+&lt;memoryInstance derived_from="RAM" edited="true" id="SRAM_UPPER" location="0x20000000" size="0x30000"/&gt;&#13;
+&lt;memoryInstance derived_from="RAM" edited="true" id="SRAM_LOWER" location="0x1fff0000" size="0x10000"/&gt;&#13;
+&lt;memoryInstance derived_from="RAM" edited="true" id="FLEX_RAM" location="0x14000000" size="0x1000"/&gt;&#13;
 &lt;/chip&gt;&#13;
 &lt;processor&gt;&#13;
 &lt;name gcc_name="cortex-m4"&gt;Cortex-M4&lt;/name&gt;&#13;
@@ -608,4 +610,19 @@
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.debug.1284265667;com.crt.advproject.config.exe.debug.1284265667.;com.crt.advproject.gas.exe.debug.1668398447;com.crt.advproject.assembler.input.1244626712">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.release.1383020521;com.crt.advproject.config.exe.release.1383020521.;com.crt.advproject.gcc.exe.release.626500938;com.crt.advproject.compiler.input.1168476058">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.release.1383020521;com.crt.advproject.config.exe.release.1383020521.;com.crt.advproject.gas.exe.release.1829217656;com.crt.advproject.assembler.input.59218182">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.crt.advproject.config.exe.debug.1284265667;com.crt.advproject.config.exe.debug.1284265667.;com.crt.advproject.gcc.exe.debug.1546198014;com.crt.advproject.compiler.input.1117565474">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.crt.advproject.GCCManagedMakePerProjectProfile"/>
+		</scannerConfigBuildInfo>
+	</storageModule>
 </cproject>

@@ -9,6 +9,7 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include source/timer/subdir.mk
+-include source/matrixOperations.h/subdir.mk
 -include source/event_queue/subdir.mk
 -include source/buffer/subdir.mk
 -include source/UART/subdir.mk
@@ -16,6 +17,7 @@ RM := rm -rf
 -include source/PIT/subdir.mk
 -include source/MPU9250/subdir.mk
 -include source/MCAL/subdir.mk
+-include source/Kalman/subdir.mk
 -include source/I2Cm/subdir.mk
 -include source/FTM/subdir.mk
 -include source/CMP/subdir.mk
