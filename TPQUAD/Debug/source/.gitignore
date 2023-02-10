@@ -1,2 +1,5 @@
 /MPU9250/
 /i2c2/
+/codegen/
+/Kalman/
+/matrixOperations.h/

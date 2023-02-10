@@ -15,13 +15,18 @@
 #include "timer/timer.h"
 #include <math.h>
 #include "MCAL/gpio.h"
+#include "Kalman/Kalman.h"
+
+#include "matrixOperations.h/matrixOperations.h"
+
 
 #define UART_ID			0
 #define UART_BAUDRATE	115200
 
+
 #define PI			3.14159265F
-#define RAD2DEG		(180/PI)
-#define DEG2RAD		(PI/180)
+#define RAD2DEG		(180.0/PI)
+#define DEG2RAD		(PI/180.0)
 #define GRAVITY		9.81F
 
 /*******************************************************************************
@@ -48,7 +53,7 @@ void App_Init (void)
 	uart_cfg_t cfg = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
 	uartInit(UART_ID, cfg);
 }
-
+static KalmanRollPitch ekf;
 
 int16_t accelData[3];
 int16_t gyroData[3];
@@ -60,11 +65,35 @@ double lastVZ[3];
 double lastZ[3];
 
 double gravityMean;
-/* Función que se llama constantemente en un ciclo infinito */
+
+const double B[9] = {1, 1, 1,
+					 3, 3, 3,
+					 5, 5, 5};
+const double P[9] = {1, 2, 2,
+					 2, 4, 8,
+					 1, 4, 6};
+const double C[9] = {3, 6, 7,
+					 2, 9, 3,
+					 1, 1, 1};
+double A[9];
+
+#define LPF_ACC_ALPHA 0.95f
+
+double AccPrev[3];
+
+static void getAnglesAcc(double* Acc, double* Angles);
 void App_Run (void)
 {
+
+	//  =========== Prueba de MATLAB mul matrixes ===============
+	imuFilter(B, P, C, A);
+	//	=========================================================
+	double KalmanQ[2] = {KALMAN_Q, KALMAN_Q};
+	double KalmanR[3] = {KALMAN_R, KALMAN_R, KALMAN_R};
+	KalmanRollPitch_init(&ekf, KALMAN_P_INIT, KalmanQ, KalmanR);
+
 	double Acc[3] = {0, 0, 0};
-	double Gyro[3] = {0, 0, 0}; 
+	double Gyro[3] = {0, 0, 0};
 	I2CmInit(I2C_ACC);
 	uint8_t AVER;
 	whoAmI(&AVER);
@@ -79,31 +108,49 @@ void App_Run (void)
 	lastAngles_rad[1] = 0;
 	lastAngles_rad[2] = 0;
 
-	const double Ts = 5e-3;
+	const double Ts = 10e-3;
 
 	tim_id_t TS_timer;
 	TS_timer = timerGetId();
 
-	timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
+	uint16_t majorLoopUpdateCounter = 0;
+
+	double thetaPrev = 0;
+	double theta;
+	double Angles[3];
+	timerStart(TS_timer, TIMER_MS2TICKS(10), TIM_MODE_SINGLESHOT, NULL);
 	while(1){
- 	
-		double Acc_G[3];
+
 		readAccelData(accelData);
 		int2doubleAcc(Acc, accelData);  // Acc -> [G]
-		Acc_G[0] = Acc[0];
-		Acc_G[1] = Acc[1];
-		Acc_G[2] = Acc[2];
-		Acc[0] = Acc[0]*gravityMean;
-		Acc[1] = Acc[1]*gravityMean;
-		Acc[2] = Acc[2]*gravityMean;  // Acc -> [m/s^2]
-		
+		Acc[0] = -Acc[0]*gravityMean;
+		Acc[1] = -Acc[1]*gravityMean;
+		Acc[2] = -Acc[2]*gravityMean;  // Acc -> [m/s^2]
+
 		readGyroData(gyroData); // raw data
 		int2doubleGyro(Gyro, gyroData);  // Gyro [deg/s]
 		
+		gpioWrite(PORTNUM2PIN(PB,2), HIGH);
 		Gyro[0] = Gyro[0] * DEG2RAD;
 		Gyro[1] = Gyro[1] * DEG2RAD;
 		Gyro[2] = Gyro[2] * DEG2RAD; //  [rad/s]
 		
+		Acc[0] = LPF_ACC_ALPHA * AccPrev[0] + (1.0f - LPF_ACC_ALPHA) * Acc[0];
+		Acc[1] = LPF_ACC_ALPHA * AccPrev[1] + (1.0f - LPF_ACC_ALPHA) * Acc[1];
+		Acc[2] = LPF_ACC_ALPHA * AccPrev[2] + (1.0f - LPF_ACC_ALPHA) * Acc[2];
+
+		AccPrev[0] = Acc[0];
+		AccPrev[1] = Acc[1];
+		AccPrev[2] = Acc[2];
+
+		// KALMAN
+		KalmanRollPitch_predict(&ekf, Gyro, Ts);
+		majorLoopUpdateCounter++;
+		if(majorLoopUpdateCounter == AMOUNT_OF_PREDICTIONS){
+			KalmanRollPitch_update(&ekf, Acc);
+			majorLoopUpdateCounter = 0;
+		}
+		gpioWrite(PORTNUM2PIN(PB,2), LOW);
 		getAnglesGyro(Gyro, lastAngles_rad, newAngles_rad, Ts);
 
 		lastAngles_rad[0] = newAngles_rad[0];
@@ -115,13 +162,18 @@ void App_Run (void)
 		newAngles_rad[0] = newAngles_rad[0] * RAD2DEG;
 		newAngles_rad[1] = newAngles_rad[1] * RAD2DEG;
 		newAngles_rad[2] = newAngles_rad[2] * RAD2DEG;
-		
-		gpioWrite(PORTNUM2PIN(PB,2), LOW);
+
+
 		while(!timerExpired(TS_timer));
-		gpioWrite(PORTNUM2PIN(PB,2), HIGH);
-		timerStart(TS_timer, TIMER_MS2TICKS(5), TIM_MODE_SINGLESHOT, NULL);
-		sendUartMessage3Channels(Acc);  // esta en m/s^2
-		//timerDelay(TIMER_US2TICKS(5000));
+		timerStart(TS_timer, TIMER_MS2TICKS(10), TIM_MODE_SINGLESHOT, NULL);
+
+		double TMPANGLE[3];
+		//TMPANGLE[0] = ekf.phi_rad*RAD2DEG;
+		TMPANGLE[0] = newAngles_rad[1];
+		TMPANGLE[1] = ekf.theta_rad*RAD2DEG;
+		TMPANGLE[2] = 0;
+
+		sendUartMessage6Channels(TMPANGLE, Angles);  // esta en m/s^2
 	}
 }
 
@@ -175,16 +227,18 @@ rotacion alrededor del x del sensor (de y a z) -> GyroRates_deg[0] == p
 rotacion alrededor del y del sensor (de x a z) -> GyroRates_deg[1] == q
 rotacion alrededor del z del sensor (de y a x) -> GyroRates_deg[2] == r
 
-newAngles[0] = roll ~ phi (de y a z)
-newAngles[1] = pitch ~ theta (de x a z)
-newAngles[2] = yaw ~ psi (de x a y)
+newAngles[0] = roll ~ phi (de y a z) -> p
+newAngles[1] = pitch ~ theta (de x a z) -> q
+newAngles[2] = yaw ~ psi (de x a y) -> r
 */
 
 // TODO: pasar argumentos en radianes (estaban en deg cuando se calcularon)
+
+
 static void getAnglesGyro(double* GyroRates_rad, double* lastAngles_rad, double* newAngles_rad, double Ts){
 	 	 
-	double phi_dot = GyroRates_rad[0] - 
-					 GyroRates_rad[1]*sin(lastAngles_rad[0])*tan(lastAngles_rad[1]) - 
+	double phi_dot = GyroRates_rad[0] +
+					 GyroRates_rad[1]*sin(lastAngles_rad[0])*tan(lastAngles_rad[1]) +
 					 GyroRates_rad[2]*cos(lastAngles_rad[0])*tan(lastAngles_rad[1]);
 
 	double theta_dot = GyroRates_rad[1]*cos(lastAngles_rad[0]) - 
