@@ -77,10 +77,11 @@ const double C[9] = {3, 6, 7,
 					 1, 1, 1};
 double A[9];
 
-#define LPF_ACC_ALPHA 0.94f
+#define LPF_ACC_ALPHA 0.95f
 
 double AccPrev[3];
 
+static void getAnglesAcc(double* Acc, double* Angles);
 void App_Run (void)
 {
 
@@ -112,6 +113,11 @@ void App_Run (void)
 	tim_id_t TS_timer;
 	TS_timer = timerGetId();
 
+	uint16_t majorLoopUpdateCounter = 0;
+
+	double thetaPrev = 0;
+	double theta;
+	double Angles[3];
 	timerStart(TS_timer, TIMER_MS2TICKS(10), TIM_MODE_SINGLESHOT, NULL);
 	while(1){
 
@@ -139,7 +145,11 @@ void App_Run (void)
 
 		// KALMAN
 		KalmanRollPitch_predict(&ekf, Gyro, Ts);
-		KalmanRollPitch_update(&ekf, Acc);
+		majorLoopUpdateCounter++;
+		if(majorLoopUpdateCounter == AMOUNT_OF_PREDICTIONS){
+			KalmanRollPitch_update(&ekf, Acc);
+			majorLoopUpdateCounter = 0;
+		}
 		gpioWrite(PORTNUM2PIN(PB,2), LOW);
 		getAnglesGyro(Gyro, lastAngles_rad, newAngles_rad, Ts);
 
@@ -162,7 +172,8 @@ void App_Run (void)
 		TMPANGLE[0] = newAngles_rad[1];
 		TMPANGLE[1] = ekf.theta_rad*RAD2DEG;
 		TMPANGLE[2] = 0;
-		sendUartMessage6Channels(TMPANGLE, newAngles_rad);  // esta en m/s^2
+
+		sendUartMessage6Channels(TMPANGLE, Angles);  // esta en m/s^2
 	}
 }
 
@@ -222,6 +233,8 @@ newAngles[2] = yaw ~ psi (de x a y) -> r
 */
 
 // TODO: pasar argumentos en radianes (estaban en deg cuando se calcularon)
+
+
 static void getAnglesGyro(double* GyroRates_rad, double* lastAngles_rad, double* newAngles_rad, double Ts){
 	 	 
 	double phi_dot = GyroRates_rad[0] +

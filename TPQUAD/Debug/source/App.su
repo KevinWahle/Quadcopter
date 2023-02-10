@@ -1,8 +1,8 @@
 ../source/App.c:49:6:App_Init	16	static
-../source/App.c:84:6:App_Run	176	static
-../source/App.c:177:13:getAnglesAcc	32	static
-../source/App.c:185:13:getAnglesAccV2	32	static
-../source/App.c:191:13:getZposition	112	static
-../source/App.c:225:13:getAnglesGyro	80	static
-../source/App.c:246:13:sendUartMessage3Channels	152	static
-../source/App.c:256:13:sendUartMessage6Channels	200	static
+../source/App.c:85:6:App_Run	216	static
+../source/App.c:188:13:getAnglesAcc	32	static
+../source/App.c:196:13:getAnglesAccV2	32	static
+../source/App.c:202:13:getZposition	112	static
+../source/App.c:238:13:getAnglesGyro	80	static
+../source/App.c:259:13:sendUartMessage3Channels	152	static
+../source/App.c:269:13:sendUartMessage6Channels	200	static

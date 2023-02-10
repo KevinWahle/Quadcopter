@@ -6,6 +6,12 @@
  */
 #include "Kalman/Kalman.h"
 
+static double phi_rad_dot_old = 0;
+static double theta_rad_dot_old = 0;
+
+static double phi_rad_dot_new = 0;
+static double theta_rad_dot_new = 0;
+
 void KalmanRollPitch_init(KalmanRollPitch *kal, double Pinit, double *Q, double *R){
 
 	kal->phi_rad = 0.0f;
@@ -35,9 +41,19 @@ void KalmanRollPitch_predict(KalmanRollPitch *kal, double *gyr_rps, double T){
 	kal->phi_rad = kal->phi_rad + T * (p + tt * (q * sp + r * cp));
 	kal->theta_rad = kal->theta_rad + T * ( q * cp - r * sp);
 
+	//phi_rad_dot_new = (p + tt * (q * sp + r * cp));
+	//theta_rad_dot_new = ( q * cp - r * sp);
+
+
+	//kal->phi_rad = kal->phi_rad + T * (phi_rad_dot_new + phi_rad_dot_old)/2;
+	//kal->theta_rad = kal->theta_rad + T * (theta_rad_dot_new + theta_rad_dot_old)/2;
+
 	/* Recompute common trig terms using new state estimates */
 		  sp = sin(kal->phi_rad);		  cp = cos(kal->phi_rad);
 	double st = sin(kal->theta_rad); double ct = cos(kal->theta_rad); tt = st / ct;
+
+	//phi_rad_dot_old = (p + tt * (q * sp + r * cp));
+	//theta_rad_dot_old = ( q * cp - r * sp);
 
 	/* Jacobian of f(x,u) */
 

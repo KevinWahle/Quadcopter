@@ -5,9 +5,10 @@
 
 #define g ((double) 9.81f)
 
-#define KALMAN_P_INIT 0.1f
+#define KALMAN_P_INIT 0.0001f
 #define KALMAN_Q 0.001f//0.001f
-#define KALMAN_R 0.011f//0.011f
+#define KALMAN_R 0.01f//0.011f
+#define AMOUNT_OF_PREDICTIONS 100
 
 typedef struct{
 	double phi_rad;
