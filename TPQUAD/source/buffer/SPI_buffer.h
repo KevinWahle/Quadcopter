@@ -78,7 +78,7 @@ package SPIBgetPckg(SPIBuffer * CB);
  * @brief tells you the amount of unread bytes
  * @param SPIBuffer type
  */
-uint8_t SPIBgetBufferState(SPIBuffer * CB);
+uint16_t SPIBgetBufferState(SPIBuffer * CB);
 
 /** UNIMPLEMENTED
  * @brief gets a chain of bytes
