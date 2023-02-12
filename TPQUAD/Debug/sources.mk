@@ -17,15 +17,16 @@ SUBDIRS := \
 SDK/CMSIS \
 SDK/startup \
 source/ADC \
-source \
 source/CAN \
 source/CMP \
 source/FTM \
+source/FastGyro \
 source/I2Cm \
 source/Kalman \
 source/MCAL \
 source/MPU9250 \
 source/PIT \
+source/SBUS \
 source/SPI \
 source/UART \
 source/buffer \

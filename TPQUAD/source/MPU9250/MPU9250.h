@@ -11,5 +11,10 @@ void int2doubleGyro(double* destination, int16_t* rawData);
 void int2doubleAcc(double* destination, int16_t* rawData);
 void calibrateMPU9250();
 double calibrateGravity(void);
+
+// SPI
+
+
+
 #endif
 

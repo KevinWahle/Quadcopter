@@ -3,3 +3,5 @@
 /codegen/
 /Kalman/
 /matrixOperations.h/
+/FastGyro/
+/SBUS/

@@ -2,6 +2,6 @@
 ../source/I2Cm/I2Cm.c:69:6:cbI2C	16	static
 ../source/I2Cm/I2Cm.c:82:6:pushTransaction	16	static
 ../source/I2Cm/I2Cm.c:96:6:I2CmInit	16	static
-../source/I2Cm/I2Cm.c:169:6:I2CmStartTransaction	24	static
-../source/I2Cm/I2Cm.c:202:6:isI2CBusy	24	static
-../source/I2Cm/I2Cm.c:216:9:I2C0_IRQHandler	24	static
+../source/I2Cm/I2Cm.c:170:6:I2CmStartTransaction	24	static
+../source/I2Cm/I2Cm.c:203:6:isI2CBusy	24	static
+../source/I2Cm/I2Cm.c:217:9:I2C0_IRQHandler	24	static

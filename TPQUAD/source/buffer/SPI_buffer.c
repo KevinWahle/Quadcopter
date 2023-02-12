@@ -55,7 +55,7 @@ package SPIBgetPckg(SPIBuffer * CB){
 	return pckgNULL;
 }
 
-uint8_t SPIBgetBufferState(SPIBuffer * CB){
+uint16_t SPIBgetBufferState(SPIBuffer * CB){
 	if(CB->head >= CB->tail)
 		return CB->head - CB->tail;
 	else
