@@ -1,44 +1,24 @@
 %% Integrando
 s = 0:0.01:20;
-f = @(t) sqrt(2*t)
+f = @(t) (sin(t/2)).^2
 plot(s, f(s))
-I_SIMPSONS = simpsons(f, 0, 20, 5)
+I_SIMPSONS = simpsons(f, 0, 5) + simpsons(f, 5, 10) + simpsons(f, 10, 15) + simpsons(f, 15, 20)
+I_EULER = eulerChad(f, 0, 20, 8)
 
-I_MIDPOINT =  midpoint_rule(f, 0, 20, 10)
-
-REAL = integral(f, 0, 20)
+REAL = integral(f, 0, 10)
 %%
-
-function integral = simpsons(f, a, b, n)
-%SIMPSONS Simpson's rule for numerical integration.
-%   INTEGRAL = SIMPSONS(F, A, B, N) returns the approximation of the definite
-%   integral of function F over the interval [A, B], using Simpson's rule with
-%   N subintervals.
-%   The function F should be written as a MATLAB inline function or an anonymous
-%   function, or be a string that can be evaluated using the eval function.
-
-% Check input arguments
-if nargin < 4
-    error('Not enough input arguments.');
+function integral = eulerChad(f, a, b, n)
+h = (b - a) / n;
+t = a:h:b;
+integral = h*sum(f(t(2:end)));
 end
-if ~isa(f, 'function_handle') && ~ischar(f)
-    error('F must be a function handle or a string.');
-end
-
+function integral = simpsons(f, a, b)
 % Evaluate the function at the sample points
-h = (b - a) / (2 * n);
-x = a:h:b;
-y = zeros(size(x));
-for i = 1:length(x)
-    if isa(f, 'function_handle')
-        y(i) = feval(f, x(i));
-    else
-        y(i) = eval(f);
-    end
-end
+h = (b - a) / 2;
+t = a:h:b;
 
 % Compute the approximation of the integral
-integral = (b - a) / (6 * n) * (y(1) + 4 * sum(y(2:2:end-1)) + 2 * sum(y(3:2:end-2)) + y(end));
+integral = h * (f(t(1)) + 4 * sum(f(t(2))) + f(t(3)))/3;
 end
 
 
@@ -72,7 +52,7 @@ result = h * sum(y);
 end
 
 
-function result = euler_rule(f, a, b, n)
+function result = euler_rule(f, a, b)
 % MIDPOINT_RULE Approximates the definite integral of f over [a,b] using the midpoint rule
 % with n subintervals.
 %

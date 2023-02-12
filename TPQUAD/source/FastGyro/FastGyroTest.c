@@ -9,10 +9,10 @@
  ******************************************************************************/
 
 #include "UART/uart.h"
-#include "MPU9250/MPU9250.h"
 #include <stdio.h>
 #include "timer/timer.h"
 #include <math.h>
+#include <Sensores/MPU9250.h>
 #include "MCAL/gpio.h"
 #include "I2Cm/I2Cm.h"
 

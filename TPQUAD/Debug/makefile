@@ -13,14 +13,13 @@ RM := rm -rf
 -include source/event_queue/subdir.mk
 -include source/buffer/subdir.mk
 -include source/UART/subdir.mk
+-include source/Sensores/subdir.mk
 -include source/SPI/subdir.mk
 -include source/SBUS/subdir.mk
 -include source/PIT/subdir.mk
--include source/MPU9250/subdir.mk
 -include source/MCAL/subdir.mk
 -include source/Kalman/subdir.mk
 -include source/I2Cm/subdir.mk
--include source/FastGyro/subdir.mk
 -include source/FTM/subdir.mk
 -include source/CMP/subdir.mk
 -include source/CAN/subdir.mk
