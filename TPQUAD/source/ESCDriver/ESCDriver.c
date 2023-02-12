@@ -38,11 +38,14 @@
 
 // ESC:
 
-#define ESC_PWM_FREQ		4000	//Hz
-//TODO: En teroria se puede subir hasta 40kHz
-// TODO: Maybe no este tan bueno usar la maxima frecuencua en el PWM. (speed = 1.0 => Señal DC)
+//TODO: En teroria se puede subir a 40kHz
+#define ESC_MAX_VALUE		(FTM_CLK/4000U)			// Cantidad de ticks para max power
+#define ESC_MIN_VALUE		(ESC_MAX_VALUE/2)		// Cantidad de ticks para STOP
 
 #define ESC_DISARM_SPEED	(-0.5F)
+
+#define ESC_DEADTIME_VALUE	ESC_MIN_VALUE
+#define ESC_DISARM_VALUE	(ESC_MIN_VALUE/2)		// Valor para desarmar
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
@@ -104,8 +107,6 @@ static const FTM_CHANNEL motorChannel[MOTOR_COUNT] = ESC_FTM_CHS;
 */
 void ESCInit(){
 
-	timerInit();
-
 	// Enable FTMx clock gating
 	*(FTMClkSimPtr[ESC_FTM_MOD]) |= FTMClkSimMask[ESC_FTM_MOD];
 
@@ -115,11 +116,11 @@ void ESCInit(){
 	if (pFTM->FMS & FTM_FMS_WPEN_MASK)	pFTM->MODE = FTM_MODE_WPDIS_MASK;
 
 	// Disblae FTM for PWM mode
-	pFTM->MODE &= ~FTM_MODE_FTMEN_MASK;		// FTMEN = 0
+	pFTM->MODE = FTM_MODE_FTMEN_MASK;		// Enable FTM
 
-	// frequency configuration
-	uint16_t mod = FTM_CLK/ESC_PWM_FREQ - 1;
-	pFTM->MOD =	mod;
+	pFTM->CNTIN = 0U;	// Reset en 0
+
+	pFTM->COMBINE = 0U;	// Clear COMBINE to set each channel later
 
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
 
@@ -127,14 +128,24 @@ void ESCInit(){
 
 		// Set PWM Mode to edge aligned with high-true polarity
 		pFTM->CONTROLS[channel].CnSC = FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;		// MSB = ELSB = 1
-		// Start with duty = 0
-		pFTM->CONTROLS[channel].CnV = (ESC_DISARM_SPEED/2+0.5)*(pFTM->MOD & FTM_MOD_MOD_MASK);
+		// Start DISARMED
+		pFTM->CONTROLS[channel].CnV = ESC_DISARM_VALUE;
+
+		// Enable PWM synchronization on the corresponding pair of channels
+		pFTM->COMBINE |= FTM_COMBINE_SYNCEN0_MASK << (8*(channel/2));
 
 		// Pin configuration
 		portPtr[FTMPinPort[ESC_FTM_MOD][channel]]->PCR[FTMPinNum[ESC_FTM_MOD][channel]] = PORT_PCR_MUX(FTMPinMuxAlt[ESC_FTM_MOD][channel]);
 	}
 
+	// Set MOD to channel value + deadtime
+	pFTM->MOD =	ESC_DISARM_VALUE + ESC_DEADTIME_VALUE;
 
+	// PWM synchronization
+
+	// Enable Enhanced PWM synchronization in MOD and CnV registers on next overflow after SW trigger
+	// Disables HW triggers
+	pFTM->SYNCONF = FTM_SYNCONF_SWWRBUF_MASK | FTM_SYNCONF_SYNCMODE_MASK;
 
 	// Set clock source and disable interrupts.
 	FTMPtrs[ESC_FTM_MOD]->SC = FTM_SC_CLKS(0x01) | FTM_SC_PS(FTM_PRES_VAL);		// Start clock
@@ -147,17 +158,23 @@ void ESCInit(){
  * 				Valor negativo desarma el motor. Valor mayor tiene comportamiento indeterminado
 */
 
-//TODO: No es necesario mandar pulsos todo el tiempo, se puede hacer single pulse en vez de PWM
 void ESCSetSpeed(double speed[MOTOR_COUNT]) {
 	FTM_Type* const pFTM = FTMPtrs[ESC_FTM_MOD];
 
+	uint16_t max = 0;
 
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++) {
 		// Update channel value
 		uint8_t channel = motorChannel[i];
+		uint16_t value = ESC_MIN_VALUE + speed[i]*(ESC_MAX_VALUE-ESC_MIN_VALUE);
+		if (value > max) max = value;	// Save maximum value
 		// Mapea speed a [MOD/2, MOD]
-		pFTM->CONTROLS[channel].CnV = (speed[i]/2+0.5)*(pFTM->MOD & FTM_MOD_MOD_MASK);
+		pFTM->CONTROLS[channel].CnV = value;
 	}
+
+	pFTM->MOD = max + ESC_DEADTIME_VALUE;
+
+	pFTM->SYNC = FTM_SYNC_SWSYNC_MASK | FTM_SYNC_CNTMAX_MASK;		// SW Trigger
 
 }
 
@@ -193,6 +210,8 @@ void ESCDisarm() {
  * @obs: Es bloqueante y tarda unos 5seg. NO LLAMAR SI LOS MOTORES ESTAN ARMADOS!!!!!
 */
 void ESCCalibrate() {
+
+	timerInit();
 
 	double speed[MOTOR_COUNT];
 
