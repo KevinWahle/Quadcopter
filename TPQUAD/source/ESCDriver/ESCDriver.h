@@ -60,7 +60,7 @@ void ESCDisarm();
 
 /**
  * @brief Realiza la calibraión de los ESC.
- * @obs: Es bloqueante y tarda unos 5seg. NO LLAMAR SI LOS MOTORES ESTAN ARMADOS!!!!!
+ * @obs: Es bloqueante y tarda unos 15seg. NO LLAMAR SI LOS MOTORES ESTAN ARMADOS!!!!!
 */
 void ESCCalibrate();
 
