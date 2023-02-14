@@ -20,9 +20,11 @@ source/ADC \
 source/CAN \
 source/CMP \
 source/FTM \
+source/Fusion \
 source/I2Cm \
 source/Kalman \
 source/MCAL \
+source/MPU9250 \
 source/PIT \
 source/SBUS \
 source/SPI \

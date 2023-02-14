@@ -45,6 +45,13 @@ static void getAnglesAcc(double* Acc, double* Angles);
 static void getAnglesAccV2(double* Acc, double* Angles);
 static void getAnglesGyro(double* GyroRates_rad, double* lastAngles_rad, double* newAngles_rad, double Ts);
 static void getZposition(double * Angles, double* body_ACC_coordinates, double* lastZ, double* lastVZ, double Ts);
+
+typedef struct{
+	double roll;
+	double pitch;
+	double yaw;
+}EulerAngles;
+
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init (void)
 {
@@ -235,8 +242,10 @@ newAngles[2] = yaw ~ psi (de x a y) -> r
 // TODO: pasar argumentos en radianes (estaban en deg cuando se calcularon)
 
 
-static void getAnglesGyro(double* GyroRates_rad, double* lastAngles_rad, double* newAngles_rad, double Ts){
+static void getAnglesGyro(Gyro* GyroRates_rad, double* newAngles_rad, double Ts){
 	 	 
+	static Gyro GyroLast = {.X = 0, .Y = 0, .Z = 0};
+
 	double phi_dot = GyroRates_rad[0] +
 					 GyroRates_rad[1]*sin(lastAngles_rad[0])*tan(lastAngles_rad[1]) +
 					 GyroRates_rad[2]*cos(lastAngles_rad[0])*tan(lastAngles_rad[1]);

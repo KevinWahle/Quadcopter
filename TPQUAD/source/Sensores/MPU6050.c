@@ -219,7 +219,7 @@ void calibrateMPU6050()
 	}
 	accelAverage[0] = -accelPartialSum[0]/AMOUNT_OF_SAMPLES;
 	accelAverage[1] = -accelPartialSum[1]/AMOUNT_OF_SAMPLES;
-	accelAverage[2] = (32767.0/2.0)-(accelPartialSum[2]/AMOUNT_OF_SAMPLES) ; // Hay que restar la gravedad.
+	accelAverage[2] = (32767.0/G_SCALE[Ascale])-(accelPartialSum[2]/AMOUNT_OF_SAMPLES) ; // Hay que restar la gravedad.
 }
 /*
 double calibrateGravity(void){
