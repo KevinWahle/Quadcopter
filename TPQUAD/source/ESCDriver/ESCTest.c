@@ -43,7 +43,7 @@ bool flag = 0;
 void App_Run (void)
 {
 
-	while(gpioRead(PIN_SW2));	// Espero SW
+//	while(gpioRead(PIN_SW2));	// Espero SW
 	ESCCalibrate();
 	while(gpioRead(PIN_SW2));	// Espero SW
 	while(!gpioRead(PIN_SW2));
@@ -54,16 +54,27 @@ void App_Run (void)
 		speed[i] = 0.0;
 	}
 
-	while(speed[0] < 1.1) {
+	while(speed[0] < 1.07) {
 		while(gpioRead(PIN_SW2));	// Espero SW
 		while(!gpioRead(PIN_SW2));
 		ESCSetSpeed(speed);
 		for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
-			speed[i] += 0.1;
+			speed[i] += 0.05;
 		}
 	}
 
+	while(speed[0] > 0) {
+		while(gpioRead(PIN_SW2));	// Espero SW
+		while(!gpioRead(PIN_SW2));
+		for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
+			speed[i] -= 0.05;
+		}
+		ESCSetSpeed(speed);
+	}
+
 	ESCDisarm();
+
+	while(1);
 
 }
 

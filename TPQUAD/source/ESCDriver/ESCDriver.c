@@ -207,7 +207,7 @@ void ESCDisarm() {
 
 /**
  * @brief Realiza la calibraión de los ESC.
- * @obs: Es bloqueante y tarda unos 5seg. NO LLAMAR SI LOS MOTORES ESTAN ARMADOS!!!!!
+ * @obs: Es bloqueante y tarda unos 15seg. NO LLAMAR SI LOS MOTORES ESTAN ARMADOS!!!!!
 */
 void ESCCalibrate() {
 
@@ -219,12 +219,12 @@ void ESCCalibrate() {
 		speed[i] = 1.0;
 	}
 	ESCSetSpeed(speed);
-	timerDelay(TIMER_MS2TICKS(2500));
+	timerDelay(TIMER_MS2TICKS(7500));
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
 		speed[i] = 0.0;
 	}
 	ESCSetSpeed(speed);
-	timerDelay(TIMER_MS2TICKS(2500));
+	timerDelay(TIMER_MS2TICKS(7500));
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
 		speed[i] = ESC_DISARM_SPEED;
 	}
