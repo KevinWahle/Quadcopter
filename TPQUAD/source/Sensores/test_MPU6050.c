@@ -32,9 +32,6 @@ typedef struct{
 	double yaw;
 }EulerAngles;
 
-
-
-
 static void sendUartMessage6Channels(double* msg1, double* msg2)
 {
 	char str[100];

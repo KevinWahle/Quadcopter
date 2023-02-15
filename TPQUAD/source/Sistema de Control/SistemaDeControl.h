@@ -1,7 +1,6 @@
 /***************************************************************************//**
 
  ******************************************************************************/
-
 #ifndef _SISTEMA_DE_CONTROL_H_
 #define _SISTEMA_DE_CONTROL_H_
 
@@ -13,6 +12,8 @@
 
 #define KI_ROWS 4
 #define KI_COLUMNS 2
+
+void runControlStep();
 
 void integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR], double reference[ROWS_INTEGRATOR_ERROR_VECTOR],
 					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR]);
