@@ -477,7 +477,7 @@ end
 hold on
 U = zeros(4, length(tspan));
 for i = 1:length(tspan)
-    U(:, i) = -K*([(y(i, 1:6).' - SetPointESTADOS) ; y(i, 13:14).']);
+    U(:, i) = -K*([(y(i, 1:8).' - SetPointESTADOS) ; y(i, 13:14).']);
 end
 yLimits = [-1 1; -1 1; -1 1; -1 1];
 for i=1:4   
@@ -702,7 +702,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     f(10,1) = ux*(1/m)*U(1);
     f(11,1) = X(12);
     f(12,1) = uy*(1/m)*U(1);
-    f(13:14,1) = C*X(1:6) - r;    % +2 variables por el integrador
+    f(13:14,1) = C*X(1:8) - r;    % +2 variables por el integrador
     f(15,1) = (X(15) - U(2))/(-k); % +1 variable por el delay en phi 
     f(16,1) = (X(16) - U(3))/(-k); % +1 variable por el delay en theta
 end
