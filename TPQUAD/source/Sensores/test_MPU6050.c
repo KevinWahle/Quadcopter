@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include "Fusion/Fusion.h"
 #include <math.h>
+#include "UART/SerialOscilloscope.h"
+
 #define UART_ID			0
 #define UART_BAUDRATE	115200
 

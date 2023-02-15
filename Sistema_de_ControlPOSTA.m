@@ -356,15 +356,15 @@ Q(3, 3) = 10;
 Q(4, 4) = 10;
 Q(5, 5) = 1;
 Q(6, 6) = 1;
-Q(7, 7) = 1;
-Q(8, 8) = 1;
-Q(9, 9) = 1;
+Q(7, 7) = 100;
+Q(8, 8) = 100;
+Q(9, 9) = 88;
 Q(10, 10) = 1;
 R = eye(4);
-R(1, 1) = 100;
-R(2, 2) = 100;
-R(3, 3) = 100;
-R(4, 4) = 100;
+R(1, 1) = 1;
+R(2, 2) = 1;
+R(3, 3) = 1;
+R(4, 4) = 1;
 K = lqr(Aaug, Baug, Q, R);
 
 X0 = [30*DEG2RAD 0 15*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0].';
@@ -372,7 +372,7 @@ SetPointESTADOS = [10*DEG2RAD 0 0 0 0 0 0 0].';
 r = [0 0].';
 tspan = [0:0.001:10];
 
-[t, y] = ode45(@(t,X)nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K, 1, C, r), tspan, X0);
+[t, y] = ode45(@(t,X)nonlinear_function_angularStates_Integrators_WITH_Z_CONTROL(X, SetPointESTADOS, K, 1, C, r), tspan, X0);
 
 mystr= ["$\Phi$", "$\dot{\Phi}$", "$\Theta$", "$\dot{\Theta}$", "$\Psi$", "$\dot{\Psi}$", "$Z$", "$\dot{Z}$", "$X$", "$\dot{X}$", "$Y$", "$\dot{Y}$"];
 yLimits = [-45 45; -45 45; -45 45; -45 45; -45 45; -45 45; -10 10; -10 10; -5 5; -5 5; -20 20; -5 5];
@@ -439,7 +439,7 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 17;
+Q(1, 1) = 10;
 Q(2, 2) = 10;
 Q(3, 3) = 10;
 Q(4, 4) = 10;
@@ -448,14 +448,14 @@ Q(6, 6) = 1;
 Q(7, 7) = 1;
 Q(8, 8) = 1;
 R = eye(4);
-R(1, 1) = 100;
-R(2, 2) = 100;
-R(3, 3) = 100;
-R(4, 4) = 100;
+R(1, 1) = 1000;
+R(2, 2) = 1000;
+R(3, 3) = 1000;
+R(4, 4) = 1000;
 K = lqr(Aaug, Baug, Q, R);
 
 X0 = [30*DEG2RAD 0 15*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0].';
-SetPointESTADOS = [10*DEG2RAD 0 0 0 0 0].';
+SetPointESTADOS = [0 0 0 0 0 0].';
 r = [SetPointESTADOS(1) SetPointESTADOS(3)].';
 tspan = 0:0.001:10;
 
@@ -676,7 +676,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     b1 = l/Ixx;
     b2 = l/Iyy;
     b3 = l/Izz;
-    k = 10e-3;
+    k = 100e-3;
     
     ut = cos(X(1))*cos(X(3));
     ux = cos(X(1))*sin(X(3))*cos(X(5)) + sin(X(1))*sin(X(5));
@@ -693,7 +693,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     f(1,1) = X(2);
     f(2,1) = X(4)*X(6)*a1 + b1*(X(15));
     f(3,1) = X(4);
-    f(4,1) = X(2)*X(6)*a2+b2*(X(16));
+    f(4,1) = X(2)*X(6)*a2+b2*(X(16));3
     f(5,1) = X(6);
     f(6,1) = X(2)*X(4)*a3+b3*U(4);
     f(7,1) = X(8);
@@ -705,6 +705,46 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     f(13:14,1) = C*X(1:6) - r;    % +2 variables por el integrador
     f(15,1) = (X(15) - U(2))/(-k); % +1 variable por el delay en phi 
     f(16,1) = (X(16) - U(3))/(-k); % +1 variable por el delay en theta
+end
+function f = nonlinear_function_angularStates_Integrators_WITH_Z_CONTROL(X, SetPointESTADOS, K, ccl, C, r) %ccl=1 if close loop
+    Ixx = 7.5e-3;
+    Iyy = 7.5e-3;
+    Izz = 1.3e-3;
+    g = 9.81;
+    m = 0.8;
+    l = 0.235;
+    b1 = l/Ixx;
+    b2 = l/Iyy;
+    b3 = l/Izz;
+    k = 100e-3;
+    
+    ut = cos(X(1))*cos(X(3));
+    ux = cos(X(1))*sin(X(3))*cos(X(5)) + sin(X(1))*sin(X(5));
+    uy = cos(X(1))*sin(X(3))*sin(X(5)) - sin(X(1))*cos(X(5));
+
+    a1 = (Iyy - Izz)/Ixx;
+    a2 = (Izz - Ixx)/Iyy;
+    a3 = (Ixx - Iyy)/Izz;
+    if ccl == 1
+        U = -K*([(X(1:8) - SetPointESTADOS) ; X(13:14)]);
+    else
+        U = [4.9 0 0 0];
+    end
+    f(1,1) = X(2);
+    f(2,1) = X(4)*X(6)*a1 + b1*(X(15));
+    f(3,1) = X(4);
+    f(4,1) = X(2)*X(6)*a2+b2*(X(16));
+    f(5,1) = X(6);
+    f(6,1) = X(2)*X(4)*a3+b3*U(4);
+    f(7,1) = X(8);
+    f(8,1) = -g + ut*(1/m)*U(1);
+    f(9,1) = X(10);
+    f(10,1) = ux*(1/m)*U(1);
+    f(11,1) = X(12);
+    f(12,1) = uy*(1/m)*U(1);
+    f(13:14,1) = -C*X(1:8) + r;
+    f(15,1) = (X(15) - U(2))/(-k);
+    f(16,1) = (X(16) - U(3))/(-k);
 end
 function f = nonlinear_discrete_function(X, SetPoint, K, ccl, lastStateX) %ccl=1 if close loop
     Ixx = 8.12e-5;
