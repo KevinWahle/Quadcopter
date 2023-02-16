@@ -24,6 +24,6 @@ void denormalized_Ki_U_Values(double input[ROWS_INTEGRATOR_ERROR_VECTOR], double
 
 void denormalized_U_total(double outKx[KX_ROWS], double outKi[KI_ROWS], double output[KX_ROWS]);
 
-void U2PWM(double U[KX_ROWS], double NormalizedU[KX_ROWS]);
+void U2PWM(double U[KX_ROWS], double MotorsPWM[4]);
 
 #endif // _SISTEMA_DE_CONTROL_H_

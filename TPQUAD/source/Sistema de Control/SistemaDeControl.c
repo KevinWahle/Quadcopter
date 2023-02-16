@@ -1,7 +1,13 @@
 #include "MatrixOps.h"
 #include <stdint.h>
 
+#define COEFF_POLY {-3.1292, 3.3299, 0.1131}
+
+static const double coeffPoly[3] = COEFF_POLY;
+
 static double lastIntegrateError[ROWS_INTEGRATOR_ERROR_VECTOR];
+static double poly(double Force);
+
 
 
 void integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR], double reference[ROWS_INTEGRATOR_ERROR_VECTOR],
@@ -33,4 +39,34 @@ void denormalized_U_total(double outKx[KX_ROWS], double outKi[KI_ROWS], double o
 	matrix_add_sub(KX_ROWS, 1, subKx, '-', outKi, output);
 }
 
-void U2PWM(double U[KX_ROWS], double NormalizedU[KX_ROWS]);
+
+
+void U2PWM(double U[KX_ROWS], double MotorsPWM[4]){
+/*
+ 	 U[0] = F1 + F2 + F3 + F4        (U1)
+ 	 U[1] = F4 - F2				     (U2)
+ 	 U[2] = F3 - F1				     (U3)
+ 	 U[3] = c*(F4 + F2 - F1 - F3)    (U4)
+*/
+
+	double F1 = -(U[3] - U[0]*c + 2*U[2]*c)/(4*c);
+	double F2 = (U[3] + U[0]*c - 2*U[1]*c)/(4*c);
+	double F3 = (U[0]*c - U[3] + 2*U[2]*c)/(4*c);
+	double F4 = (U[3] + U[0]*c + 2*U[1]*c)/(4*c);
+
+	// Mapping a motores nuestros
+	/*
+	 	 M1* -> M2
+	 	 M4* -> M3
+	 	 M2* -> M1
+	 	 M3* -> M4
+	*/
+	MotorsPWM[0] = poly(F2);
+	MotorsPWM[1] = poly(F1);
+	MotorsPWM[2] = poly(F4);
+	MotorsPWM[3] = poly(F3);
+}
+
+static double poly(double Force){
+	return coeffPoly[0]*Force*Force + coeffPoly[1]*Force + coeffPoly[2];
+}

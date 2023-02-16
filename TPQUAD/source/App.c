@@ -114,7 +114,6 @@ void App_Run (void)
 
         // ==================================================================
 
-
 		runControlStep();
 
 		gpioWrite(PORTNUM2PIN(PD, 0), LOW);
