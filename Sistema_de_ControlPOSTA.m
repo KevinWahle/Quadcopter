@@ -425,7 +425,7 @@ eqn4 = c*T1 + c*T3 - c*T2 - c*T4 == U4;
 X = linsolve(A,B)
 %% Solo estados angulosos, Integrador y DELAY
 % LQR + I
-DEG2RAD = pi/180
+DEG2RAD = pi/180;
 [A, B, C, D] = getSystem();
 
 A = A(1:6, 1:6);
@@ -439,14 +439,14 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 10;
+Q(1, 1) = 50;
 Q(2, 2) = 10;
-Q(3, 3) = 10;
+Q(3, 3) = 50;
 Q(4, 4) = 10;
 Q(5, 5) = 1;
 Q(6, 6) = 1;
-Q(7, 7) = 1;
-Q(8, 8) = 1;
+Q(7, 7) = 10;
+Q(8, 8) = 10;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -454,10 +454,10 @@ R(3, 3) = 1000;
 R(4, 4) = 1000;
 K = lqr(Aaug, Baug, Q, R);
 
-X0 = [30*DEG2RAD 0 15*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0].';
+X0 = [30*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0].';
 SetPointESTADOS = [0 0 0 0 0 0].';
 r = [SetPointESTADOS(1) SetPointESTADOS(3)].';
-tspan = 0:0.001:10;
+tspan = 0:0.01:25;
 
 [t, y] = ode45(@(t,X)nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K, 1, C, r), tspan, X0);
 
@@ -473,6 +473,21 @@ for i=1:12
     title (mystr(i), 'interpreter' , 'latex');
 end
 
+% Ploteo del error integral
+hold off
+mystr = ["Error en $\phi$", "Error en $\theta$"];
+for i=13:14 
+    subplot (2,1,i-12);
+    plot (t,y(:,i));
+    grid on
+    title (mystr(i - 12), 'interpreter' , 'latex');
+end
+Ts = 570e-6;
+[Kd,S,e] = lqrd(Aaug, Baug, Q, R, Ts);
+
+Kx = Kd(:, 1:6);
+Ki = Kd(:, 7:8);
+
 
 hold on
 U = zeros(4, length(tspan));
@@ -486,42 +501,22 @@ for i=1:4
     %ylim(yLimits(i, :));
     grid on
 end
-% SISTEMA LINEAL PURO
 
 
-% b = 1;
-% X = [
-%   (U(4, :) + U(1, :)*b - 2*U(3, :)*b)/(4*b); ...
-%   (U(1, :)*b - U(4, :) + 2*U(2, :)*b)/(4*b);...
-%   (U(4, :) + U(1, :)*b + 2*U(3, :)*b)/(4*b);...
-%  -(U(4, :) - U(1, :)*b + 2*U(2, :)*b)/(4*b) ];
-% for i=1:4   
-%     subplot (4,1,i);
-%     plot (t, X(i, :));
-%     %ylim(yLimits(i, :));
-%     grid on
-% end
-
-%% Matlab matrix to C code
-
-A = [1 2 3; 8 5 6; 7 8 9];
-fprintf("double A[%d][%d] = {\n", size(A, 1), size(A, 2));
-for i = 1:size(A, 1)
-    fprintf("\t{");
-    for j = 1:size(A, 2)
-        fprintf("%.5f", A(i,j));
-        if j < size(A, 2)
-            fprintf(", ");
-        end
-    end
-    fprintf("}");
-    if i < size(A, 1)
-        fprintf(",\n");
-    else
-        fprintf("\n");
-    end
+c = 1;
+X = [
+  -(U(4, :) - U(1, :)*c + 2*U(3, :)*c)/(4*c); ...
+   (U(4, :) + U(1, :)*c - 2*U(2, :)*c)/(4*c);...
+   (U(1, :)*c - U(4, :) + 2*U(3, :)*c)/(4*c);...
+   (U(4, :) + U(1, :)*c + 2*U(2, :)*c)/(4*c) ];
+for i=1:4   
+    subplot (4,1,i);
+    plot (t, X(i, :));
+    %ylim(yLimits(i, :));
+    grid on
 end
-fprintf("};\n");
+
+
 %%
 
 
@@ -708,13 +703,19 @@ function [A, B, C, D] = getSystem()
     for i=1:12
        B(i,:) = gradient (f(i), [U1 U2 U3 U4]).';
     end 
-
-    m = 0.506;
+    Ixx = 7.5e-3;
+    Iyy = 7.5e-3;
+    Izz = 1.3e-3;
     g = 9.8;
+    m = 0.8;
     l = 0.235;
-    Ixx = 8.12e-5;
-    Iyy = 8.12e-5;
-    Izz = 6.12e-5;
+
+%     Ixx = 8.12e-5;
+%     Iyy = 8.12e-5;
+%     Izz = 6.12e-5;
+%     g = 9.8;
+%     m = 0.5;
+%     l = 0.235;
     U1= +m*g;
     U2=0;
     U3=0;
@@ -803,11 +804,11 @@ function f = nonlinear_function_angularStates(X, SetPoint, K, ccl) %ccl=1 if clo
     f(12,1) = uy*(1/m)*U(1);
 end
 function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K, ccl, C, r) %ccl=1 if close loop
-    Ixx = 8.12e-5;
-    Iyy = 8.12e-5;
-    Izz = 6.12e-5;
+    Ixx = 7.5e-3;
+    Iyy = 7.5e-3;
+    Izz = 1.3e-3;
     g = 9.8;
-    m = 0.5;
+    m = 0.8;
     l = 0.235;
     b1 = l/Ixx;
     b2 = l/Iyy;
@@ -829,7 +830,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     f(1,1) = X(2);
     f(2,1) = X(4)*X(6)*a1 + b1*(X(15));
     f(3,1) = X(4);
-    f(4,1) = X(2)*X(6)*a2+b2*(X(16));3
+    f(4,1) = X(2)*X(6)*a2+b2*(X(16));
     f(5,1) = X(6);
     f(6,1) = X(2)*X(4)*a3+b3*U(4);
     f(7,1) = X(8);
@@ -883,12 +884,13 @@ function f = nonlinear_function_angularStates_Integrators_WITH_Z_CONTROL(X, SetP
     f(16,1) = (X(16) - U(3))/(-k);
 end
 function f = nonlinear_discrete_function(X, SetPoint, K, ccl, lastStateX) %ccl=1 if close loop
-    Ixx = 8.12e-5;
-    Iyy = 8.12e-5;
-    Izz = 6.12e-5;
+    Ixx = 7.5e-3;
+    Iyy = 7.5e-3;
+    Izz = 1.3e-3;
     g = 9.8;
-    m = 0.5;
+    m = 0.8;
     l = 0.235;
+
     b1 = l/Ixx;
     b2 = l/Iyy;
     b3 = l/Izz;
@@ -922,4 +924,26 @@ end
 function f = linearSystem(X, SetPoint, K, A, B)
     u = -K*(X(1:8, 1) - SetPoint); % k es de 4x8
     f = A*X + B*u;
+end
+
+
+%% Matlab matrix to C code
+function printMatrixAsCcode(A)
+    fprintf("double A[%d][%d] = {\n", size(A, 1), size(A, 2));
+    for i = 1:size(A, 1)
+        fprintf("\t{");
+        for j = 1:size(A, 2)
+            fprintf("%.5f", A(i,j));
+            if j < size(A, 2)
+                fprintf(", ");
+            end
+        end
+        fprintf("}");
+        if i < size(A, 1)
+            fprintf(",\n");
+        else
+            fprintf("\n");
+        end
+    end
+    fprintf("};\n");
 end

@@ -6,6 +6,8 @@
 #include "Fusion/Fusion.h"
 #include <math.h>
 #include "I2Cm/I2Cm.h"
+#include <ESCDriver/ESCDriver.h>
+#include "MCAL/board.h"
 
 typedef struct{
 	double roll;
@@ -28,6 +30,9 @@ typedef struct{
 #define RAD2DEG (180/PI)
 #define SAMPLE_PERIOD (0.000570f) // replace this with actual sample period
 
+#define LED_1 PORTNUM2PIN(PB, 2)
+
+
 static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts);
 static void startI2CreadingCallBack();
 static void startI2C_ACCELEROMETER_CallBack();
@@ -45,6 +50,13 @@ void App_Init (void)
 	uartInit(UART_ID, cfg);
 	gpioMode (PORTNUM2PIN(PD, 0), OUTPUT);
 	gpioWrite(PORTNUM2PIN(PD, 0), LOW);
+
+	gpioMode(LED_1, OUTPUT);
+	gpioWrite(LED_1, LOW);
+
+	ESCInit();
+	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
+
 }
 static void startI2CreadingCallBack(){
 	mpu6050_readGyroData_async(&gyroData);
@@ -59,6 +71,7 @@ static void startI2C_ACCELEROMETER_CallBack(){
 
 void App_Run (void)
 {
+	gpioWrite(LED_1, HIGH); // Calibrations Start
 //======================================================================
 //========================== Madwick init ==============================
 //======================================================================
@@ -83,16 +96,28 @@ void App_Run (void)
 	timerDelay(TIMER_MS2TICKS(100));
 	calibrateMPU6050();
 
+	// =====================================================================
+	// ========================= ESC =======================================
+	// =====================================================================
+	ESCCalibrate();
 	//======================================================================
 	//======================================================================
 	//======================================================================
+	while(gpioRead(PIN_SW2));	// Espero SW
+	while(!gpioRead(PIN_SW2));
+
 	mpu6050_readGyroData(&gyroData);
 	mpu6050_readGyroData(&accelData);
 
 	timerStart(TS_timer, TIMER_US2TICKS(SAMPLE_PERIOD*10e6), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
 
-	while(1){
+	gpioWrite(LED_1, LOW);   // Quad Starts
+
+	ESCArm();
+	double speed[MOTOR_COUNT] = INIT_MOTOR_VALUES;
+
+	while(gpioRead(PIN_SW2)){
 		gpioWrite(PORTNUM2PIN(PD, 0), HIGH);
 		Gyro sampleGyro = gyroData;// Esto es peligroso porque asume que el ultimo timer que se lanzo aun el I2C no le transmitio
 		Acc sampleAcc = accelData;// Esto es peligroso porque asume que el ultimo timer que se lanzo aun el I2C no le transmitio
@@ -105,24 +130,41 @@ void App_Run (void)
         FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, SAMPLE_PERIOD);
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-
         const EulerAngles eulerAngles = {.eulerAngles.pitch = euler.angle.pitch, .eulerAngles.roll = euler.angle.roll, .eulerAngles.yaw = euler.angle.yaw};
-
         const EulerAnglesRates eulerRates;
-
         getEulerAnglesRates(&sampleGyro, &eulerAngles, &eulerRates);
 
         // ==================================================================
 
-		runControlStep();
+		runControlStep(&eulerAngles, &eulerRates, speed);
+		ESCSetSpeed(speed);
 
 		gpioWrite(PORTNUM2PIN(PD, 0), LOW);
 		while(!timerExpired(TS_timer));
 		timerStart(TS_timer, TIMER_US2TICKS(SAMPLE_PERIOD*10e6), TIM_MODE_SINGLESHOT, NULL);
 	}
+	ESCDisarm();
+	while(1){                                // forever blink
+		gpioToggle(LED_1);
+		timerDelay(TIMER_MS2TICKS(250));
+	}
 }
 const double referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR] = {0, 0};
 const double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR] = {0, 0, 0, 0, 0, 0};
+
+const double Kx[KX_ROWS][KX_COLUMNS] = {
+	{0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000},
+	{0.28898, 0.16856, -0.00000, -0.00000, 0.00000, 0.00000},
+	{-0.00000, -0.00000, 0.28898, 0.16856, -0.00000, -0.00000},
+	{0.00000, 0.00000, -0.00000, -0.00000, 0.03156, 0.03668}
+};
+
+const double Ki[KI_ROWS][KI_COLUMNS] = {
+	{0.00000, 0.00000},
+	{0.09985, -0.00000},
+	{-0.00000, 0.09985},
+	{0.00000, -0.00000}
+};
 
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]){
 	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR] = {Angles->roll, Angles->pitch};
@@ -137,8 +179,8 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 
 	double KxU[KX_ROWS];
 	double KiU[KI_ROWS];
-	denormalized_Kx_U_Values(outputPropError, double Kx[KX_ROWS][KX_COLUMNS], KxU);
-	denormalized_Ki_U_Values(outputInt, double Ki[KI_ROWS][KI_COLUMNS], KiU);
+	denormalized_Kx_U_Values(outputPropError, Kx, KxU);
+	denormalized_Ki_U_Values(outputInt, Ki, KiU);
 	double U[4];
 	denormalized_U_total(KxU, KiU, U);
 	U2PWM(U, U_PWM);

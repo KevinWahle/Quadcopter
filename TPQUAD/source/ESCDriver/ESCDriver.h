@@ -30,11 +30,13 @@
 // Canales del FTM a utilizar
 #define ESC_FTM_CHS		{0, 1, 2, 3}	// Corresponde a PC1, PC2 PC3 y PC4 respectivamente
 
+#define INIT_MOTOR_VALUES	{0.0, 0.0, 0.0, 0.0}
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
 typedef enum {FTM_0, FTM_1, FTM_2, FTM_3, FTM_COUNT} FTM_MODULE;
+
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
