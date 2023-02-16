@@ -17,18 +17,19 @@ SUBDIRS := \
 SDK/CMSIS \
 SDK/startup \
 source/ADC \
+source \
 source/CAN \
 source/CMP \
 source/ESCDriver \
 source/FTM \
 source/Fusion \
 source/I2Cm \
-source/Kalman \
 source/MCAL \
 source/PIT \
 source/SBUS \
 source/SPI \
 source/Sensores \
+source/Sistema\ de\ Control \
 source/UART \
 source/buffer \
 source/event_queue \

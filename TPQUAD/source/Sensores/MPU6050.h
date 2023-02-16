@@ -6,8 +6,14 @@
 
 void initMPU6050();
 
-void mpu6050_readAccelData(Acc * destination);
 void mpu6050_readGyroData(Gyro * destination);
+void mpu6050_readAccelData(Acc * destination);
+
+void mpu6050_readGyroData_async();
+void mpu6050_readAccelData_async();
+
+void mpu6050_getLastGyroRead(Gyro * destination);
+void mpu6050_getLastAccelRead(Acc * destination);
 
 void mpu6050_whoAmI(uint8_t * read);
 

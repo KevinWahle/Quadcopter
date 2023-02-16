@@ -12,12 +12,12 @@ RM := rm -rf
 -include source/event_queue/subdir.mk
 -include source/buffer/subdir.mk
 -include source/UART/subdir.mk
+-include source/Sistema\ de\ Control/subdir.mk
 -include source/Sensores/subdir.mk
 -include source/SPI/subdir.mk
 -include source/SBUS/subdir.mk
 -include source/PIT/subdir.mk
 -include source/MCAL/subdir.mk
--include source/Kalman/subdir.mk
 -include source/I2Cm/subdir.mk
 -include source/Fusion/subdir.mk
 -include source/FTM/subdir.mk
@@ -25,6 +25,7 @@ RM := rm -rf
 -include source/CMP/subdir.mk
 -include source/CAN/subdir.mk
 -include source/ADC/subdir.mk
+-include source/subdir.mk
 -include SDK/startup/subdir.mk
 -include SDK/CMSIS/subdir.mk
 -include objects.mk

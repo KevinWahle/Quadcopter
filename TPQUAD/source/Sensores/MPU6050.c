@@ -3,6 +3,7 @@
 #include "MPU6050.h"
 #include <stddef.h>
 #include "timer/timer.h"
+#include <string.h>
 
 #define AMOUNT_OF_SAMPLES 1000
 
@@ -38,6 +39,9 @@ static uint8_t readBuffer[10];
 static uint8_t readSize;
 static double gyroAverage[3] = {0, 0, 0};
 static double accelAverage[3]={0, 0, 0};
+
+static uint8_t LastRawDataGyroRead[6];
+static uint8_t LastRawDataAccRead[6];
 
 static void mpu6050_raw2trueGyro(Gyro * gyroData);
 static void mpu6050_raw2trueAcc(Acc * accData);
@@ -170,10 +174,12 @@ void mpu6050_readAccelData(Acc * accData)
 	I2CmStartTransaction(I2C_ACC, MPU6050_ADDRESS, writeBuffer, writeSize, rawData, readSize);
 	while(isI2CBusy(I2C_ACC));
 	//readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers into data array
-	accData->rawX = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-	accData->rawY = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;
-	accData->rawZ = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ;
+	accData->rawX = (int16_t)(((int16_t)LastRawDataAccRead[0] << 8) | LastRawDataAccRead[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+	accData->rawY = (int16_t)(((int16_t)LastRawDataAccRead[2] << 8) | LastRawDataAccRead[3]) ;
+	accData->rawZ = (int16_t)(((int16_t)LastRawDataAccRead[4] << 8) | LastRawDataAccRead[5]) ;
 	mpu6050_raw2trueAcc(accData);
+
+	memcpy(LastRawDataAccRead, rawData, sizeof(uint8_t)*6);
 }
 void mpu6050_readGyroData(Gyro * gyroData)
 {
@@ -189,7 +195,36 @@ void mpu6050_readGyroData(Gyro * gyroData)
 	gyroData->rawY = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;
 	gyroData->rawZ = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ;
 	mpu6050_raw2trueGyro(gyroData);
+
+	memcpy(LastRawDataGyroRead, rawData, sizeof(uint8_t)*6);
 }
+
+void mpu6050_readGyroData_async(){
+	writeSize = 1;
+	readSize = 6;
+	writeBuffer[0] = GYRO_XOUT_H;
+	I2CmStartTransaction(I2C_ACC, MPU6050_ADDRESS, writeBuffer, writeSize, LastRawDataGyroRead, readSize);
+}
+void mpu6050_readAccelData_async(){
+	writeSize = 1;
+	readSize = 6;
+	writeBuffer[0] = ACCEL_XOUT_H;
+	I2CmStartTransaction(I2C_ACC, MPU6050_ADDRESS, writeBuffer, writeSize, LastRawDataAccRead, readSize);
+}
+
+void mpu6050_getLastGyroRead(Gyro * gyroData){
+	gyroData->rawX = (int16_t)(((int16_t)LastRawDataGyroRead[0] << 8) | LastRawDataGyroRead[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+	gyroData->rawY = (int16_t)(((int16_t)LastRawDataGyroRead[2] << 8) | LastRawDataGyroRead[3]) ;
+	gyroData->rawZ = (int16_t)(((int16_t)LastRawDataGyroRead[4] << 8) | LastRawDataGyroRead[5]) ;
+	mpu6050_raw2trueGyro(gyroData);
+}
+void mpu6050_getLastAccelRead(Acc * accData){
+	accData->rawX = (int16_t)(((int16_t)LastRawDataAccRead[0] << 8) | LastRawDataAccRead[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+	accData->rawY = (int16_t)(((int16_t)LastRawDataAccRead[2] << 8) | LastRawDataAccRead[3]) ;
+	accData->rawZ = (int16_t)(((int16_t)LastRawDataAccRead[4] << 8) | LastRawDataAccRead[5]) ;
+	mpu6050_raw2trueAcc(accData);
+}
+
 
 void calibrateMPU6050()
 {

@@ -488,6 +488,8 @@ Ts = 570e-6;
 Kx = Kd(:, 1:6);
 Ki = Kd(:, 7:8);
 
+printMatrixAsCcode(Kx);
+printMatrixAsCcode(Ki);
 
 hold on
 U = zeros(4, length(tspan));
@@ -517,8 +519,7 @@ for i=1:4
 end
 
 
-%%
-
+%% Least Squares curva motor
 
 y = [0.05
 0.1
@@ -632,7 +633,20 @@ eqn4 = -c*F1 - c*F3 + c*F2 + c*F4 == U4;
 [A,B] = equationsToMatrix([eqn1, eqn2, eqn3, eqn4], [F1, F2, F3, F4])
 X = linsolve(A,B)
 
-%%
+%% Test borrable
+Ts = 0.000570;
+InputState = [0.1; 0.1; 0.1; 0.1 ;0.1 ;0.1];
+Reference = [0; 0; 0; 0; 0; 0];
+Int = zeros(2, 1);
+for i=1:3000
+    ErrP = InputState - Reference;
+    Ux = Kx * ErrP;
+    ErrI = [InputState(1); InputState(3)] - [Reference(1); Reference(3)];
+    Int = Int + ErrI * Ts;
+    U = -Ux - Ki*Int;
+end
+
+%% Curvas de Motor parametricas
 syms a b
 cantCurvas = 12;
 x = zeros(2, cantCurvas);

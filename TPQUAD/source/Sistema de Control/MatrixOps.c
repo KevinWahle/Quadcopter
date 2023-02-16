@@ -8,7 +8,7 @@
 #include "MatrixOps.h"
 
 
-void matrix_mult(uint8_t m, uint8_t n, uint8_t p, double A[m][n], double B[n][p], double C[m][p])
+void matrix_mult(uint8_t m, uint8_t n, uint8_t p, const double A[m][n], const double B[n][p], double C[m][p])
 {
 	for (uint8_t i = 0; i < m; i++) {
 		for (uint8_t j = 0; j < p; j++) {
@@ -29,11 +29,11 @@ void scalar_mult(uint8_t m, uint8_t n, double scalar, double InOut[m][n]){
 	}
 }
 
-void matrix_add_sub(uint8_t m, uint8_t n, double A[m][n], char sign, double B[m][n], double C[m][n]) {
+void matrix_add_sub(uint8_t m, uint8_t n, const double A[m][n], char sign, const double B[m][n], double C[m][n]) {
 	int8_t signtmp = sign == '-'? -1 : 1;
     for (uint8_t i = 0; i < m; i++) {
         for (uint8_t j = 0; j < n; j++) {
-            C[i][j] = A[i][j] + sign*B[i][j];
+            C[i][j] = A[i][j] + signtmp*B[i][j];
         }
     }
 }

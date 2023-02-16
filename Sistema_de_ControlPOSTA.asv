@@ -488,6 +488,8 @@ Ts = 570e-6;
 Kx = Kd(:, 1:6);
 Ki = Kd(:, 7:8);
 
+printMatrixAsCcode(Kx);
+printMatrixAsCcode(Ki);
 
 hold on
 U = zeros(4, length(tspan));
@@ -517,8 +519,7 @@ for i=1:4
 end
 
 
-%%
-
+%% Least Squares curva motor
 
 y = [0.05
 0.1
@@ -562,16 +563,16 @@ x = [0.005
 0.72].';
 
 
-%M3 = [5.435   4.635   3.835   3.035   2.325   1.435   0.635];
-%PWM = [1.00     1.28     1.70     2.20     2.97     4.35     7.50  ];
-% p = polyfit(x, y, 2);                                               % Quadratic Function Fit
-% v = polyval(p, x);                                                  % Evaluate
-% TSE = sum((v - y).^2);                                              % Total Squared Error
-% figure(1)
-% plot(x, y, 'bp')
-% hold on
-% plot(x, v, '-r')
-% grid
+M3 = [5.435   4.635   3.835   3.035   2.325   1.435   0.635];
+PWM = [1.00     1.28     1.70     2.20     2.97     4.35     7.50  ];
+p = polyfit(x, y, 2);                                               % Quadratic Function Fit
+v = polyval(p, x);                                                  % Evaluate
+TSE = sum((v - y).^2);                                              % Total Squared Error
+figure(1)
+plot(x, y, 'bp')
+hold on
+plot(x, v, '-r')
+grid
 
 PWM = [0.05
 0.1
@@ -632,7 +633,19 @@ eqn4 = -c*F1 - c*F3 + c*F2 + c*F4 == U4;
 [A,B] = equationsToMatrix([eqn1, eqn2, eqn3, eqn4], [F1, F2, F3, F4])
 X = linsolve(A,B)
 
-%%
+%% Test borrable
+Ts = 0.000570;
+for
+InputState = [0.1; 0.1; 0.1; 0.1 ;0.1 ;0.1];
+Reference = [0; 0; 0; 0; 0; 0];
+ErrP = InputState - Reference;
+Ux = Kx * ErrP;
+ErrI = [InputState(1); InputState(3)] - [Reference(1); Reference(3)];
+Int = ErrI * Ts;
+U = -Ux - Ki*Int;
+
+
+%% Curvas de Motor parametricas
 syms a b
 cantCurvas = 12;
 x = zeros(2, cantCurvas);
@@ -828,17 +841,16 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
         U = [4.9 0 0 0];
     end
     
-    F1_MISMATCH = 1.3;
-    F2_MISMATCH = 0.8;
-    F3_MISMATCH = 0.9;
-    F4_MISMATCH = 1.1;
+    F1_MISMATCH = 1.7;
+    F2_MISMATCH = 1.2;
+    F3_MISMATCH = 1;
+    F4_MISMATCH = 0.6;
     
     c = 10;
     F1 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F1_MISMATCH;
     F2 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c) * F2_MISMATCH;
     F3 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c) * F3_MISMATCH;
     F4 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c) * F4_MISMATCH;
-    
     
     U(1) = F1 + F2 + F3 + F4;
     U(2) = F4 - F2;

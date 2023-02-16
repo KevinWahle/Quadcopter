@@ -1,5 +1,4 @@
 #include "timer/timer.h"
-#include "MPU6050.h"
 #include "UART/uart.h"
 #include "MCAL/gpio.h"
 #include <stdio.h>
@@ -8,6 +7,9 @@
 #include "I2Cm/I2Cm.h"
 #include <ESCDriver/ESCDriver.h>
 #include "MCAL/board.h"
+#include "Sensores/MPU6050.h"
+#include "Sistema de Control/SistemaDeControl.h"
+#include "ESCDriver/ESCDriver.h"
 
 typedef struct{
 	double roll;
@@ -37,6 +39,8 @@ static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts
 static void startI2CreadingCallBack();
 static void startI2C_ACCELEROMETER_CallBack();
 static void getEulerAnglesRates(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
+static void startI2CreadingCallBack();
+static void startI2C_ACCELEROMETER_CallBack();
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]);
 
 Acc accelData;
@@ -46,6 +50,7 @@ tim_id_t I2CtriggerAcc;
 
 void App_Init (void)
 {
+
 	uart_cfg_t cfg = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
 	uartInit(UART_ID, cfg);
 	gpioMode (PORTNUM2PIN(PD, 0), OUTPUT);
@@ -59,12 +64,12 @@ void App_Init (void)
 
 }
 static void startI2CreadingCallBack(){
-	mpu6050_readGyroData_async(&gyroData);
-	timerStart(I2Ctrigger, TIMER_US2TICKS(20), TIM_MODE_PERIODIC, startI2C_ACCELEROMETER_CallBack);
+	mpu6050_readGyroData_async();
+	timerStart(I2CtriggerAcc, TIMER_US2TICKS(20), TIM_MODE_PERIODIC, startI2C_ACCELEROMETER_CallBack);
 }
 static void startI2C_ACCELEROMETER_CallBack(){
 	if(!isI2CBusy(I2C_ACC)){
-		mpu6050_readGyroData_async(&accelData);
+		mpu6050_readGyroData_async();
 		timerStop(I2CtriggerAcc);
 	}
 }
@@ -85,7 +90,7 @@ void App_Run (void)
 	tim_id_t TS_timer;
 	TS_timer = timerGetId();
 
-	I2Ctrigger = timerGetId();
+	I2CtriggerAcc = timerGetId();
 
 	tim_id_t timerUart;
 	timerUart = timerGetId();
@@ -108,7 +113,7 @@ void App_Run (void)
 	while(!gpioRead(PIN_SW2));
 
 	mpu6050_readGyroData(&gyroData);
-	mpu6050_readGyroData(&accelData);
+	mpu6050_readAccelData(&accelData);
 
 	timerStart(TS_timer, TIMER_US2TICKS(SAMPLE_PERIOD*10e6), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
@@ -119,19 +124,21 @@ void App_Run (void)
 
 	while(gpioRead(PIN_SW2)){
 		gpioWrite(PORTNUM2PIN(PD, 0), HIGH);
+		mpu6050_getLastGyroRead(&gyroData);
+		mpu6050_getLastAccelRead(&accelData);
 		Gyro sampleGyro = gyroData;// Esto es peligroso porque asume que el ultimo timer que se lanzo aun el I2C no le transmitio
 		Acc sampleAcc = accelData;// Esto es peligroso porque asume que el ultimo timer que se lanzo aun el I2C no le transmitio
 
 		// ================== Observador de Estados ========================
 
-        const FusionVector gyroscope = {.axis.x =  gyroData.X, .axis.y = gyroData.Y, .axis.z = gyroData.Z}; // replace this with actual gyroscope data in degrees/s
-        const FusionVector accelerometer = {.axis.x = accelData.X, .axis.y = accelData.Y, .axis.z = accelData.Z}; // replace this with actual accelerometer data in g
+        const FusionVector gyroscope = {.axis.x =  sampleGyro.X, .axis.y = sampleGyro.Y, .axis.z = sampleGyro.Z}; // replace this with actual gyroscope data in degrees/s
+        const FusionVector accelerometer = {.axis.x = sampleAcc.X, .axis.y = sampleAcc.Y, .axis.z = sampleAcc.Z}; // replace this with actual accelerometer data in g
 
         FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, SAMPLE_PERIOD);
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-        const EulerAngles eulerAngles = {.eulerAngles.pitch = euler.angle.pitch, .eulerAngles.roll = euler.angle.roll, .eulerAngles.yaw = euler.angle.yaw};
-        const EulerAnglesRates eulerRates;
+        EulerAngles eulerAngles = {.pitch = euler.angle.pitch, .roll = euler.angle.roll, .yaw = euler.angle.yaw};
+        EulerAnglesRates eulerRates;
         getEulerAnglesRates(&sampleGyro, &eulerAngles, &eulerRates);
 
         // ==================================================================
@@ -149,41 +156,46 @@ void App_Run (void)
 		timerDelay(TIMER_MS2TICKS(250));
 	}
 }
-const double referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR] = {0, 0};
-const double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR] = {0, 0, 0, 0, 0, 0};
+double referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{0}, {0}};
+double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}, {0}, {0}, {0}};
 
-const double Kx[KX_ROWS][KX_COLUMNS] = {
-	{0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000},
-	{0.28898, 0.16856, -0.00000, -0.00000, 0.00000, 0.00000},
-	{-0.00000, -0.00000, 0.28898, 0.16856, -0.00000, -0.00000},
-	{0.00000, 0.00000, -0.00000, -0.00000, 0.03156, 0.03668}
+
+double Kx[KX_ROWS][KX_COLUMNS] = {
+	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+	{0.2889838, 0.1685642, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
+	{-0.0000000, -0.0000000, 0.2889838, 0.1685642, -0.0000000, -0.0000000},
+	{0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.0315630, 0.0366801}
+};
+double Ki[KI_ROWS][KI_COLUMNS] = {
+	{0.0000000, 0.0000000},
+	{0.0998495, -0.0000000},
+	{-0.0000000, 0.0998495},
+	{0.0000000, -0.0000000}
 };
 
-const double Ki[KI_ROWS][KI_COLUMNS] = {
-	{0.00000, 0.00000},
-	{0.09985, -0.00000},
-	{-0.00000, 0.09985},
-	{0.00000, -0.00000}
-};
 
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]){
-	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR] = {Angles->roll, Angles->pitch};
-	double outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR];
+	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll}, {Angles->pitch}};
+	double outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	integrateError(statesIntegrator, referenceIntegrator,
-				   SAMPLE_PERIOD, outputInt);
+				   SAMPLE_PERIOD, outputIntError);
 
-	double outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR];
-	double statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR] = {Angles->roll, AnglesRates->roll_dot, Angles->pitch, AnglesRates->pitch_dot, Angles->yaw, AnglesRates->yaw_dot};
+	double outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR][1];
+	double statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll}, {AnglesRates->roll_dot}, {Angles->pitch}, {AnglesRates->pitch_dot}, {Angles->yaw}, {AnglesRates->yaw_dot}};
 	proportionalError(statesProportional, referenceProportional,
 					  outputPropError);
 
-	double KxU[KX_ROWS];
-	double KiU[KI_ROWS];
-	denormalized_Kx_U_Values(outputPropError, Kx, KxU);
-	denormalized_Ki_U_Values(outputInt, Ki, KiU);
-	double U[4];
+	double KxU[KX_ROWS][1];
+	double KiU[KI_ROWS][1];
+	denormalized_Kx_U_Values(Kx, outputPropError, KxU);
+	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
+	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
 	U2PWM(U, U_PWM);
+	U_PWM[0] = U[0][0];
+	U_PWM[1] = U[1][0];
+	U_PWM[2] = U[2][0];
+	U_PWM[3] = U[3][0];
 }
 
 
