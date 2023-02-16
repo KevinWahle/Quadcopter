@@ -457,7 +457,7 @@ K = lqr(Aaug, Baug, Q, R);
 X0 = [30*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0].';
 SetPointESTADOS = [0 0 0 0 0 0].';
 r = [SetPointESTADOS(1) SetPointESTADOS(3)].';
-tspan = 0:0.01:25;
+tspan = 0:0.01:10;
 
 [t, y] = ode45(@(t,X)nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K, 1, C, r), tspan, X0);
 
@@ -503,7 +503,7 @@ for i=1:4
 end
 
 
-c = 1;
+c = 10;
 X = [
   -(U(4, :) - U(1, :)*c + 2*U(3, :)*c)/(4*c); ...
    (U(4, :) + U(1, :)*c - 2*U(2, :)*c)/(4*c);...
@@ -562,16 +562,16 @@ x = [0.005
 0.72].';
 
 
-%M3 = [5.435   4.635   3.835   3.035   2.325   1.435   0.635];
-%PWM = [1.00     1.28     1.70     2.20     2.97     4.35     7.50  ];
-% p = polyfit(x, y, 2);                                               % Quadratic Function Fit
-% v = polyval(p, x);                                                  % Evaluate
-% TSE = sum((v - y).^2);                                              % Total Squared Error
-% figure(1)
-% plot(x, y, 'bp')
-% hold on
-% plot(x, v, '-r')
-% grid
+M3 = [5.435   4.635   3.835   3.035   2.325   1.435   0.635];
+PWM = [1.00     1.28     1.70     2.20     2.97     4.35     7.50  ];
+p = polyfit(x, y, 2);                                               % Quadratic Function Fit
+v = polyval(p, x);                                                  % Evaluate
+TSE = sum((v - y).^2);                                              % Total Squared Error
+figure(1)
+plot(x, y, 'bp')
+hold on
+plot(x, v, '-r')
+grid
 
 PWM = [0.05
 0.1
@@ -623,7 +623,7 @@ plot(Forza, PWM, 'bp')
 hold on
 plot(Forza, v, '-r')
 grid
-
+%% Solver 
 syms F1 F2 F3 F4 b U1 U2 U3 U4 c
 eqn1 = F1 + F2 + F3 + F4 == U1;
 eqn2 = F4 - F2 == U2;
@@ -813,7 +813,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     b1 = l/Ixx;
     b2 = l/Iyy;
     b3 = l/Izz;
-    k = 100e-3;
+    k = 1e-3;
     
     ut = cos(X(1))*cos(X(3));
     ux = cos(X(1))*sin(X(3))*cos(X(5)) + sin(X(1))*sin(X(5));
@@ -827,6 +827,24 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     else
         U = [4.9 0 0 0];
     end
+    
+    F1_MISMATCH = 1.7;
+    F2_MISMATCH = 1.2;
+    F3_MISMATCH = 1;
+    F4_MISMATCH = 0.6;
+    
+    c = 10;
+    F1 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F1_MISMATCH;
+    F2 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c) * F2_MISMATCH;
+    F3 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c) * F3_MISMATCH;
+    F4 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c) * F4_MISMATCH;
+    
+    U(1) = F1 + F2 + F3 + F4;
+    U(2) = F4 - F2;
+    U(1) = F3 - F1;
+    U(4) = -c*F1 - c*F3 + c*F2 + c*F4;
+    
+    
     f(1,1) = X(2);
     f(2,1) = X(4)*X(6)*a1 + b1*(X(15));
     f(3,1) = X(4);
@@ -839,7 +857,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     f(10,1) = ux*(1/m)*U(1);
     f(11,1) = X(12);
     f(12,1) = uy*(1/m)*U(1);
-    f(13:14,1) = C*X(1:6) - r;    % +2 variables por el integrador
+    f(13:14,1) = C*X(1:6) - r;     % +2 variables por el integrador
     f(15,1) = (X(15) - U(2))/(-k); % +1 variable por el delay en phi 
     f(16,1) = (X(16) - U(3))/(-k); % +1 variable por el delay en theta
 end
@@ -925,15 +943,13 @@ function f = linearSystem(X, SetPoint, K, A, B)
     u = -K*(X(1:8, 1) - SetPoint); % k es de 4x8
     f = A*X + B*u;
 end
-
-
 %% Matlab matrix to C code
 function printMatrixAsCcode(A)
     fprintf("double A[%d][%d] = {\n", size(A, 1), size(A, 2));
     for i = 1:size(A, 1)
         fprintf("\t{");
         for j = 1:size(A, 2)
-            fprintf("%.5f", A(i,j));
+            fprintf("%.7f", A(i,j));
             if j < size(A, 2)
                 fprintf(", ");
             end

@@ -103,6 +103,7 @@ void App_Run (void)
 	//======================================================================
 	//======================================================================
 	//======================================================================
+	gpioWrite(LED_1, LOW);   // Quad Starts
 	while(gpioRead(PIN_SW2));	// Espero SW
 	while(!gpioRead(PIN_SW2));
 
@@ -112,7 +113,6 @@ void App_Run (void)
 	timerStart(TS_timer, TIMER_US2TICKS(SAMPLE_PERIOD*10e6), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
 
-	gpioWrite(LED_1, LOW);   // Quad Starts
 
 	ESCArm();
 	double speed[MOTOR_COUNT] = INIT_MOTOR_VALUES;

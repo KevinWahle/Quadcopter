@@ -9,7 +9,6 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include source/timer/subdir.mk
--include source/matrixOperations.h/subdir.mk
 -include source/event_queue/subdir.mk
 -include source/buffer/subdir.mk
 -include source/UART/subdir.mk

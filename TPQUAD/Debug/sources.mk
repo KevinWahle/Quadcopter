@@ -32,6 +32,5 @@ source/Sensores \
 source/UART \
 source/buffer \
 source/event_queue \
-source/matrixOperations.h \
 source/timer \
 

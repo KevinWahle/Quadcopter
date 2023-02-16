@@ -17,7 +17,7 @@ c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(sqrtf_m4_hardfp.o)
                               ./source/Fusion/FusionAhrs.o (sqrtf)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(memcpy.o)
-                              ./source/matrixOperations.h/matrixOperations.o (memcpy)
+                              ./source/buffer/SPI_buffer.o (memcpy)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(memset.o)
                               ./source/Sensores/MPU6050.o (memset)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(cos.o)
@@ -25,7 +25,7 @@ c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(errno.o)
                               c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(atan2f.o) (errno)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(fabs.o)
-                              ./source/matrixOperations.h/matrixOperations.o (fabs)
+                              ./source/Fusion/FusionOffset.o (fabs)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(sin.o)
                               ./source/Kalman/Kalman.o (sin)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libcr_c.a(tan.o)
@@ -47,7 +47,7 @@ c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard\libcr_eabihelpers.a(division_idiv0.o)
                               c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard\libcr_eabihelpers.a(division_64.o) (__aeabi_idiv0)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard\libcr_eabihelpers.a(double.o)
-                              ./source/matrixOperations.h/matrixOperations.o (__aeabi_dmul)
+                              ./source/Sensores/MPU6050.o (__aeabi_dmul)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard\libcr_eabihelpers.a(float.o)
                               ./source/Fusion/FusionOffset.o (__aeabi_f2d)
 c:/nxp/mcuxpressoide_11.6.1_8255/ide/plugins/com.nxp.mcuxpresso.tools.win32_11.6.1.202207200623/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard\libcr_eabihelpers.a(memcpy.o)
@@ -105,67 +105,6 @@ Discarded input sections
  .debug_macro   0x00000000      0xa7e ./source/timer/timer.o
  .debug_macro   0x00000000      0x34e ./source/timer/timer.o
  .debug_macro   0x00000000       0x22 ./source/timer/timer.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .group         0x00000000        0xc ./source/matrixOperations.h/matrixOperations.o
- .text          0x00000000        0x0 ./source/matrixOperations.h/matrixOperations.o
- .data          0x00000000        0x0 ./source/matrixOperations.h/matrixOperations.o
- .bss           0x00000000        0x0 ./source/matrixOperations.h/matrixOperations.o
- .text.imuFilter
-                0x00000000      0xc88 ./source/matrixOperations.h/matrixOperations.o
- .debug_info    0x00000000      0x18c ./source/matrixOperations.h/matrixOperations.o
- .debug_abbrev  0x00000000       0x9c ./source/matrixOperations.h/matrixOperations.o
- .debug_aranges
-                0x00000000       0x20 ./source/matrixOperations.h/matrixOperations.o
- .debug_ranges  0x00000000       0x10 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000      0x140 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000      0xa7e ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000      0x174 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x1e ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x22 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x5e ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x94 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x35 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x34 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x16 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x35 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x16 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x43 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x57 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x34 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x10 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x58 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000      0x182 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000      0x341 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x16 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x29 ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000      0x19b ./source/matrixOperations.h/matrixOperations.o
- .debug_macro   0x00000000       0x16 ./source/matrixOperations.h/matrixOperations.o
- .debug_line    0x00000000      0x6da ./source/matrixOperations.h/matrixOperations.o
- .debug_str     0x00000000     0x65a5 ./source/matrixOperations.h/matrixOperations.o
- .comment       0x00000000       0x4a ./source/matrixOperations.h/matrixOperations.o
- .debug_frame   0x00000000       0x44 ./source/matrixOperations.h/matrixOperations.o
- .ARM.attributes
-                0x00000000       0x34 ./source/matrixOperations.h/matrixOperations.o
  .group         0x00000000        0xc ./source/event_queue/event_queue.o
  .group         0x00000000        0xc ./source/event_queue/event_queue.o
  .group         0x00000000        0xc ./source/event_queue/event_queue.o
@@ -265,8 +204,6 @@ Discarded input sections
  .debug_macro   0x00000000       0x10 ./source/buffer/SPI_buffer.o
  .debug_macro   0x00000000       0x58 ./source/buffer/SPI_buffer.o
  .debug_macro   0x00000000      0x182 ./source/buffer/SPI_buffer.o
- .debug_macro   0x00000000       0x16 ./source/buffer/SPI_buffer.o
- .debug_macro   0x00000000       0x35 ./source/buffer/SPI_buffer.o
  .group         0x00000000        0xc ./source/buffer/circular_buffer.o
  .group         0x00000000        0xc ./source/buffer/circular_buffer.o
  .group         0x00000000        0xc ./source/buffer/circular_buffer.o
@@ -1423,7 +1360,7 @@ Discarded input sections
  .debug_macro   0x00000000      0xa7e ./source/ESCDriver/ESCTest.o
  .debug_macro   0x00000000      0x34e ./source/ESCDriver/ESCTest.o
  .debug_macro   0x00000000       0x22 ./source/ESCDriver/ESCTest.o
- .debug_macro   0x00000000       0x16 ./source/ESCDriver/ESCTest.o
+ .debug_macro   0x00000000       0x1c ./source/ESCDriver/ESCTest.o
  .debug_macro   0x00000000       0x40 ./source/ESCDriver/ESCTest.o
  .debug_macro   0x00000000       0x22 ./source/ESCDriver/ESCTest.o
  .debug_macro   0x00000000       0x5e ./source/ESCDriver/ESCTest.o
@@ -2169,7 +2106,6 @@ Linker script and memory map
 
 LOAD ./source/timer/SysTick.o
 LOAD ./source/timer/timer.o
-LOAD ./source/matrixOperations.h/matrixOperations.o
 LOAD ./source/event_queue/event_queue.o
 LOAD ./source/buffer/SPI_buffer.o
 LOAD ./source/buffer/circular_buffer.o
@@ -3087,7 +3023,7 @@ LOAD linker stubs
  .debug_ranges  0x000003b0      0x320 ./SDK/startup/startup_mk64f12.o
  .debug_ranges  0x000006d0       0x20 ./SDK/CMSIS/system_MK64F12.o
 
-.debug_macro    0x00000000    0x136cd
+.debug_macro    0x00000000    0x1371e
  .debug_macro   0x00000000       0xb6 ./source/timer/SysTick.o
  .debug_macro   0x000000b6      0xa7e ./source/timer/SysTick.o
  .debug_macro   0x00000b34       0x22 ./source/timer/SysTick.o
@@ -3141,31 +3077,33 @@ LOAD linker stubs
  .debug_macro   0x00012304       0x3d ./source/buffer/SPI_buffer.o
  .debug_macro   0x00012341       0x16 ./source/buffer/SPI_buffer.o
  .debug_macro   0x00012357      0x16f ./source/buffer/SPI_buffer.o
- .debug_macro   0x000124c6       0xac ./source/buffer/circular_buffer.o
- .debug_macro   0x00012572       0xe8 ./source/UART/uart.o
- .debug_macro   0x0001265a       0x10 ./source/UART/uart.o
- .debug_macro   0x0001266a       0x40 ./source/UART/uart.o
- .debug_macro   0x000126aa      0x31f ./source/SPI/SPI.o
- .debug_macro   0x000129c9       0x3a ./source/SPI/SPI.o
- .debug_macro   0x00012a03       0x10 ./source/SPI/SPI.o
- .debug_macro   0x00012a13       0x10 ./source/SPI/SPI.o
- .debug_macro   0x00012a23       0xf2 ./source/SBUS/SBUS.o
- .debug_macro   0x00012b15       0xd3 ./source/PIT/PIT.o
- .debug_macro   0x00012be8       0x28 ./source/PIT/PIT.o
- .debug_macro   0x00012c10       0xc4 ./source/MCAL/gpio.o
- .debug_macro   0x00012cd4      0x1fd ./source/I2Cm/I2Cm.o
- .debug_macro   0x00012ed1       0x10 ./source/I2Cm/I2Cm.o
- .debug_macro   0x00012ee1      0x1c5 ./source/FTM/FTM.o
- .debug_macro   0x000130a6       0x22 ./source/FTM/FTM.o
- .debug_macro   0x000130c8      0x1ec ./source/ESCDriver/ESCDriver.o
- .debug_macro   0x000132b4       0x16 ./source/ESCDriver/ESCDriver.o
- .debug_macro   0x000132ca      0x1d7 ./source/ESCDriver/ESCTest.o
- .debug_macro   0x000134a1       0x3a ./source/ESCDriver/ESCTest.o
- .debug_macro   0x000134db       0x9c ./SDK/startup/hardware.o
- .debug_macro   0x00013577       0x9c ./SDK/startup/main.o
- .debug_macro   0x00013613       0x11 ./SDK/startup/semihost_hardfault.o
- .debug_macro   0x00013624       0x29 ./SDK/startup/startup_mk64f12.o
- .debug_macro   0x0001364d       0x80 ./SDK/CMSIS/system_MK64F12.o
+ .debug_macro   0x000124c6       0x16 ./source/buffer/SPI_buffer.o
+ .debug_macro   0x000124dc       0x35 ./source/buffer/SPI_buffer.o
+ .debug_macro   0x00012511       0xac ./source/buffer/circular_buffer.o
+ .debug_macro   0x000125bd       0xe8 ./source/UART/uart.o
+ .debug_macro   0x000126a5       0x10 ./source/UART/uart.o
+ .debug_macro   0x000126b5       0x40 ./source/UART/uart.o
+ .debug_macro   0x000126f5      0x31f ./source/SPI/SPI.o
+ .debug_macro   0x00012a14       0x3a ./source/SPI/SPI.o
+ .debug_macro   0x00012a4e       0x10 ./source/SPI/SPI.o
+ .debug_macro   0x00012a5e       0x10 ./source/SPI/SPI.o
+ .debug_macro   0x00012a6e       0xf2 ./source/SBUS/SBUS.o
+ .debug_macro   0x00012b60       0xd3 ./source/PIT/PIT.o
+ .debug_macro   0x00012c33       0x28 ./source/PIT/PIT.o
+ .debug_macro   0x00012c5b       0xc4 ./source/MCAL/gpio.o
+ .debug_macro   0x00012d1f      0x1fd ./source/I2Cm/I2Cm.o
+ .debug_macro   0x00012f1c       0x10 ./source/I2Cm/I2Cm.o
+ .debug_macro   0x00012f2c      0x1c5 ./source/FTM/FTM.o
+ .debug_macro   0x000130f1       0x22 ./source/FTM/FTM.o
+ .debug_macro   0x00013113      0x1ec ./source/ESCDriver/ESCDriver.o
+ .debug_macro   0x000132ff       0x1c ./source/ESCDriver/ESCDriver.o
+ .debug_macro   0x0001331b      0x1d7 ./source/ESCDriver/ESCTest.o
+ .debug_macro   0x000134f2       0x3a ./source/ESCDriver/ESCTest.o
+ .debug_macro   0x0001352c       0x9c ./SDK/startup/hardware.o
+ .debug_macro   0x000135c8       0x9c ./SDK/startup/main.o
+ .debug_macro   0x00013664       0x11 ./SDK/startup/semihost_hardfault.o
+ .debug_macro   0x00013675       0x29 ./SDK/startup/startup_mk64f12.o
+ .debug_macro   0x0001369e       0x80 ./SDK/CMSIS/system_MK64F12.o
 
 .debug_line     0x00000000     0x586a
  .debug_line    0x00000000      0x232 ./source/timer/SysTick.o
@@ -3187,7 +3125,7 @@ LOAD linker stubs
  .debug_line    0x00004c31      0x917 ./SDK/startup/startup_mk64f12.o
  .debug_line    0x00005548      0x322 ./SDK/CMSIS/system_MK64F12.o
 
-.debug_str      0x00000000    0x7dc2e
+.debug_str      0x00000000    0x7dc55
  .debug_str     0x00000000    0x773ec ./source/timer/SysTick.o
                               0x775b7 (size before relaxing)
  .debug_str     0x000773ec     0x30b5 ./source/timer/timer.o
@@ -3210,19 +3148,19 @@ LOAD linker stubs
                               0x7aa24 (size before relaxing)
  .debug_str     0x0007cbae      0x4cc ./source/FTM/FTM.o
                               0x7aae5 (size before relaxing)
- .debug_str     0x0007d07a      0x193 ./source/ESCDriver/ESCDriver.o
-                              0x7a4b3 (size before relaxing)
- .debug_str     0x0007d20d      0x121 ./source/ESCDriver/ESCTest.o
-                               0x7a4a (size before relaxing)
- .debug_str     0x0007d32e      0x16f ./SDK/startup/hardware.o
+ .debug_str     0x0007d07a      0x1ba ./source/ESCDriver/ESCDriver.o
+                              0x7a4da (size before relaxing)
+ .debug_str     0x0007d234      0x121 ./source/ESCDriver/ESCTest.o
+                               0x7a71 (size before relaxing)
+ .debug_str     0x0007d355      0x16f ./SDK/startup/hardware.o
                               0x771d6 (size before relaxing)
- .debug_str     0x0007d49d       0x1b ./SDK/startup/main.o
+ .debug_str     0x0007d4c4       0x1b ./SDK/startup/main.o
                               0x76fa1 (size before relaxing)
- .debug_str     0x0007d4b8       0x36 ./SDK/startup/semihost_hardfault.o
+ .debug_str     0x0007d4df       0x36 ./SDK/startup/semihost_hardfault.o
                                0x2d4a (size before relaxing)
- .debug_str     0x0007d4ee      0x6ce ./SDK/startup/startup_mk64f12.o
+ .debug_str     0x0007d515      0x6ce ./SDK/startup/startup_mk64f12.o
                                0x35a4 (size before relaxing)
- .debug_str     0x0007dbbc       0x72 ./SDK/CMSIS/system_MK64F12.o
+ .debug_str     0x0007dbe3       0x72 ./SDK/CMSIS/system_MK64F12.o
                               0x770f5 (size before relaxing)
 
 .comment        0x00000000       0x49
