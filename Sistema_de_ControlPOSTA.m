@@ -439,14 +439,14 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 50;
-Q(2, 2) = 10;
-Q(3, 3) = 50;
-Q(4, 4) = 10;
-Q(5, 5) = 1;
-Q(6, 6) = 1;
-Q(7, 7) = 10;
-Q(8, 8) = 10;
+Q(1, 1) = 10000;
+Q(2, 2) = 100;
+Q(3, 3) = 10000;
+Q(4, 4) = 100;
+Q(5, 5) = 1000;
+Q(6, 6) = 1000;
+Q(7, 7) = 1000;
+Q(8, 8) = 1000;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -454,10 +454,10 @@ R(3, 3) = 1000;
 R(4, 4) = 1000;
 K = lqr(Aaug, Baug, Q, R);
 
-X0 = [30*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0].';
+X0 = [20*DEG2RAD 0 -10*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0].';
 SetPointESTADOS = [0 0 0 0 0 0].';
 r = [SetPointESTADOS(1) SetPointESTADOS(3)].';
-tspan = 0:0.01:10;
+tspan = 0:0.01:20;
 
 [t, y] = ode45(@(t,X)nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K, 1, C, r), tspan, X0);
 
@@ -827,7 +827,7 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     b1 = l/Ixx;
     b2 = l/Iyy;
     b3 = l/Izz;
-    k = 1e-3;
+    k = 10e-3;
     
     ut = cos(X(1))*cos(X(3));
     ux = cos(X(1))*sin(X(3))*cos(X(5)) + sin(X(1))*sin(X(5));
@@ -842,11 +842,12 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
         U = [4.9 0 0 0];
     end
     
-    F1_MISMATCH = 1.7;
-    F2_MISMATCH = 1.2;
+    F1_MISMATCH = 1;
+    F2_MISMATCH = 1;
     F3_MISMATCH = 1;
-    F4_MISMATCH = 0.6;
+    F4_MISMATCH = 1;
     
+    U(1) = 4.91;
     c = 10;
     F1 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F1_MISMATCH;
     F2 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c) * F2_MISMATCH;
@@ -857,7 +858,6 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     U(2) = F4 - F2;
     U(1) = F3 - F1;
     U(4) = -c*F1 - c*F3 + c*F2 + c*F4;
-    
     
     f(1,1) = X(2);
     f(2,1) = X(4)*X(6)*a1 + b1*(X(15));
