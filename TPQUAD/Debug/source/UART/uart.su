@@ -8,5 +8,4 @@
 ../source/UART/uart.c:234:13:UART_Rx_Tx_IRQ	24	static
 ../source/UART/uart.c:254:9:UART0_RX_TX_IRQHandler	16	static
 ../source/UART/uart.c:278:9:UART2_RX_TX_IRQHandler	16	static
-../source/UART/uart.c:290:9:UART3_RX_TX_IRQHandler	16	static
 ../source/UART/uart.c:302:9:UART4_RX_TX_IRQHandler	16	static

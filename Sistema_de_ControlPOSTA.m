@@ -423,7 +423,7 @@ eqn3 = T3 - T1 == U3;
 eqn4 = c*T1 + c*T3 - c*T2 - c*T4 == U4;
 [A,B] = equationsToMatrix([eqn1, eqn2, eqn3, eqn4], [T1, T2, T3, T4])
 X = linsolve(A,B)
-%% Solo estados angulosos, Integrador y DELAY
+%% Solo estados angulosos, Integrador y DELAY y MISMATCH
 % LQR + I
 DEG2RAD = pi/180;
 [A, B, C, D] = getSystem();

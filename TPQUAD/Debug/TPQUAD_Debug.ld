@@ -6,11 +6,11 @@
  * Generated linker script file for MK64FN1M0xxx12
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v11.6.1 [Build 8255] [2022-10-03] on Feb 17, 2023, 2:58:22 PM
+ * MCUXpresso IDE v11.6.1 [Build 8255] [2022-10-03] on Feb 17, 2023, 7:13:48 PM
  */
 
-INCLUDE "TP3_Debug_library.ld"
-INCLUDE "TP3_Debug_memory.ld"
+INCLUDE "TPQUAD_Debug_library.ld"
+INCLUDE "TPQUAD_Debug_memory.ld"
 
 ENTRY(ResetISR)
 

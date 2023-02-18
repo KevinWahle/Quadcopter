@@ -27,7 +27,7 @@
 
 #define SBUS_CANT_IDS	5
 
-#define SBUS_UART_ID	1
+#define SBUS_UART_ID	3
 
 #define SBUS_START_BYTE		(0x0FU)
 #define SBUS_STOP_BYTE		(0x0U)
@@ -58,9 +58,9 @@ static const uint32_t UARTSIMMask[] = {SIM_SCGC4_UART0_MASK, SIM_SCGC4_UART1_MAS
 
 static const IRQn_Type UART_RX_TX_Vectors[] = UART_RX_TX_IRQS;
 
-static const uint8_t UARTPinPort[] = {PB, PC, PD, PB, PE};
+static const uint8_t UARTPinPort[] = {PB, PC, PD, PC, PE};
 
-static const uint8_t UARTPinNumRX[] = {16, 3, 2, 10, 24};
+static const uint8_t UARTPinNumRX[] = {16, 3, 2, 16, 24};
 
 static const uint8_t UARTPinMuxAlt[] = {3, 3, 3, 3, 3};
 
@@ -214,7 +214,7 @@ static void UART_SBUS_IRQ() {
 }
 
 
-__ISR__ UART1_RX_TX_IRQHandler(void){
+__ISR__ UART3_RX_TX_IRQHandler(void){
 
 	UART_SBUS_IRQ();
 

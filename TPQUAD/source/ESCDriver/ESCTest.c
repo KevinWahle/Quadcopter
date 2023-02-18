@@ -12,6 +12,7 @@
 #include "MCAL/gpio.h"
 #include "MCAL/board.h"
 #include <stdio.h>
+#include "timer/timer.h"
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
@@ -33,23 +34,42 @@
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init (void)
 {
+	timerInit();
 	ESCInit();
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
+
 }
 
 bool flag = 0;
-
+double speedY[MOTOR_COUNT];
+/*
+void DIMMER_PWM(){
+    speed[0] = speed[0] + 0.05 > 1.0 ? 1.0 : speed[0] + 0.05;
+    speed[1] = speed[1] + 0.05 > 1.0 ? 1.0 : speed[1] + 0.05;
+    speed[2] = speed[2] + 0.05 > 1.0 ? 1.0 : speed[2] + 0.05;
+    speed[3] = speed[3] + 0.05 > 1.0 ? 1.0 : speed[3] + 0.05;
+    ESCSetSpeed(speed);
+}
+*/
 /* Función que se llama constantemente en un ciclo infinito */
 void App_Run (void)
 {
-
+	tim_id_t TS_timer;
+	TS_timer = timerGetId();
 //	while(gpioRead(PIN_SW2));	// Espero SW
 	ESCCalibrate();
 	while(gpioRead(PIN_SW2));	// Espero SW
 	while(!gpioRead(PIN_SW2));
 	ESCArm();
-	double speed[MOTOR_COUNT];
-
+	timerDelay(TIMER_MS2TICKS(5000));
+	//timerStart(TS_timer, TIMER_MS2TICKS(100), TIM_MODE_PERIODIC, DIMMER_PWM);
+	speedY[0] = 0.6;
+	speedY[1] = 0.6;
+	speedY[2] = 0.6;
+	speedY[3] = 0.6;
+    ESCSetSpeed(speedY);
+	while(1);
+/*
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
 		speed[i] = 0.0;
 	}
@@ -71,7 +91,7 @@ void App_Run (void)
 		}
 		ESCSetSpeed(speed);
 	}
-
+	*/
 	ESCDisarm();
 
 	while(1);

@@ -10,6 +10,9 @@
 #include "Sensores/MPU6050.h"
 #include "Sistema de Control/SistemaDeControl.h"
 #include "ESCDriver/ESCDriver.h"
+#include "UART/UART.h"
+#include "SBUS/SBUS.h"
+#include <arm_math.h>
 
 typedef struct{
 	double roll;
@@ -27,7 +30,6 @@ typedef struct{
 #define UART_ID			0
 #define UART_BAUDRATE	115200
 
-#define PI (3.141592)
 #define DEG2RAD (PI/180)
 #define RAD2DEG (180/PI)
 #define SAMPLE_PERIOD (0.000570f) // replace this with actual sample period
@@ -41,15 +43,27 @@ static void startI2C_ACCELEROMETER_CallBack();
 static void getEulerAnglesRates(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
 static void startI2CreadingCallBack();
 static void startI2C_ACCELEROMETER_CallBack();
-void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]);
-
+static void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]);
+static double getU1fromSBUS();
+static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
 Acc accelData;
 Gyro gyroData;
 EulerAngles AnglesIntegrated;
 tim_id_t I2CtriggerAcc;
+SBUSData_t sbus;
+
+static char strChannels[100];
+static void sendUartMessage3Channels(double* msg1)
+{
+	uint16_t charCount= sprintf(strChannels, "%.1f, %.1f, %.1f \r\n",
+						msg1[0], msg1[1], msg1[2]);
+	uartWriteMsg(UART_ID, strChannels, charCount);
+}
+
 
 void App_Init (void)
 {
+
 
 	uart_cfg_t cfg = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
 	uartInit(UART_ID, cfg);
@@ -59,13 +73,15 @@ void App_Init (void)
 	gpioMode(LED_1, OUTPUT);
 	gpioWrite(LED_1, LOW);
 
+	SBUSInit(&sbus);
 	ESCInit();
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
+
 
 }
 static void startI2CreadingCallBack(){
 	mpu6050_readGyroData_async();
-	timerStart(I2CtriggerAcc, TIMER_US2TICKS(20), TIM_MODE_PERIODIC, startI2C_ACCELEROMETER_CallBack);
+	timerStart(I2CtriggerAcc, TIMER_MS2TICKS(0.020), TIM_MODE_PERIODIC, startI2C_ACCELEROMETER_CallBack);
 }
 static void startI2C_ACCELEROMETER_CallBack(){
 	if(!isI2CBusy(I2C_ACC)){
@@ -73,10 +89,10 @@ static void startI2C_ACCELEROMETER_CallBack(){
 		timerStop(I2CtriggerAcc);
 	}
 }
-
 void App_Run (void)
 {
 	gpioWrite(LED_1, HIGH); // Calibrations Start
+	ESCCalibrate();
 //======================================================================
 //========================== Madwick init ==============================
 //======================================================================
@@ -95,33 +111,44 @@ void App_Run (void)
 	tim_id_t timerUart;
 	timerUart = timerGetId();
 
-
+/*
 	timerDelay(TIMER_MS2TICKS(100));
 	initMPU6050();
 	timerDelay(TIMER_MS2TICKS(100));
 	calibrateMPU6050();
+*/
+	//======================================================================
+	// ========================= SBUS init =================================
+	//======================================================================
+
 
 	// =====================================================================
 	// ========================= ESC =======================================
 	// =====================================================================
-	ESCCalibrate();
 	//======================================================================
 	//======================================================================
 	//======================================================================
 	gpioWrite(LED_1, LOW);   // Quad Starts
-	while(gpioRead(PIN_SW2));	// Espero SW
+/*	while(gpioRead(PIN_SW2));	// Espero SW
 	while(!gpioRead(PIN_SW2));
 
 	mpu6050_readGyroData(&gyroData);
 	mpu6050_readAccelData(&accelData);
 
-	timerStart(TS_timer, TIMER_US2TICKS(SAMPLE_PERIOD*10e6), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
-	timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
 
+	timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
+	timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
+*/
 
 	ESCArm();
 	double speed[MOTOR_COUNT] = INIT_MOTOR_VALUES;
-
+    speed[0] = 0.6;
+    speed[1] = 0.6;
+    speed[2] = 0.6;
+    speed[3] = 0.6;
+	ESCSetSpeed(speed);
+	while(1);
+	startI2CreadingCallBack();
 	while(gpioRead(PIN_SW2)){
 		gpioWrite(PORTNUM2PIN(PD, 0), HIGH);
 		mpu6050_getLastGyroRead(&gyroData);
@@ -139,16 +166,23 @@ void App_Run (void)
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         EulerAngles eulerAngles = {.pitch = euler.angle.pitch, .roll = euler.angle.roll, .yaw = euler.angle.yaw};
         EulerAnglesRates eulerRates;
-        getEulerAnglesRates(&sampleGyro, &eulerAngles, &eulerRates);
+       // getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
 
         // ==================================================================
 
-		runControlStep(&eulerAngles, &eulerRates, speed);
-		ESCSetSpeed(speed);
+		//runControlStep(&eulerAngles, &eulerRates, speed);
 
+		//ESCSetSpeed(speed);
+/*
+		if(timerExpired(timerUart)){
+			double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw};
+			sendUartMessage3Channels(tmp);
+			timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
+		}
+*/
 		gpioWrite(PORTNUM2PIN(PD, 0), LOW);
 		while(!timerExpired(TS_timer));
-		timerStart(TS_timer, TIMER_US2TICKS(SAMPLE_PERIOD*10e6), TIM_MODE_SINGLESHOT, NULL);
+		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	}
 	ESCDisarm();
 	while(1){                                // forever blink
@@ -192,11 +226,15 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
 	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
+	U[0][0] = getU1fromSBUS();
 	U2PWM(U, U_PWM);
-	U_PWM[0] = U[0][0];
-	U_PWM[1] = U[1][0];
-	U_PWM[2] = U[2][0];
-	U_PWM[3] = U[3][0];
+}
+
+static double getU1fromSBUS(){
+	double linealFactor = 2.5;
+	if(sbus.channels[2] < 240)
+		return 0;
+	return (sbus.channels[2]-240)/(1800-240) / linealFactor;
 }
 
 
@@ -230,6 +268,11 @@ static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts
 					 GyroRates_rad->Y*sin(lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD) +
 					 GyroRates_rad->Z*cos(lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD);
 
+/*	double phi_dot = GyroRates_rad->X +
+					 GyroRates_rad->Y*arm_sin_f32((float32_t)lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD) +
+					 GyroRates_rad->Z*cos(lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD);
+*/
+
 	double theta_dot = GyroRates_rad->Y*cos(lastAngle.roll*DEG2RAD) -
 					   GyroRates_rad->Z*sin(lastAngle.roll*DEG2RAD);
 
@@ -250,5 +293,17 @@ static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts
 	lastAngle.yaw = newAngles->yaw;
 }
 
+static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates){
 
+	rates->roll_dot = GyroRates->X +
+					  GyroRates->Y*arm_sin_f32(newAngles->roll*DEG2RAD)*(arm_sin_f32(newAngles->pitch*DEG2RAD)/arm_cos_f32(newAngles->pitch*DEG2RAD)) +
+					  GyroRates->Z*arm_cos_f32(newAngles->roll*DEG2RAD)*(arm_sin_f32(newAngles->pitch*DEG2RAD)/arm_cos_f32(newAngles->pitch*DEG2RAD));
+
+	rates->pitch_dot = GyroRates->Y*arm_cos_f32(newAngles->roll*DEG2RAD) -
+					   GyroRates->Z*arm_sin_f32(newAngles->roll*DEG2RAD);
+
+	//psidot=(qsin(0)-rcos(0))*sec(1)
+	rates->yaw_dot = (GyroRates->Y*arm_sin_f32(newAngles->roll*DEG2RAD) +
+					  GyroRates->Z*arm_cos_f32(newAngles->roll*DEG2RAD))/arm_cos_f32(newAngles->pitch*DEG2RAD);
+}
 
