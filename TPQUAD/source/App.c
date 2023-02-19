@@ -132,7 +132,6 @@ void App_Run (void)
 //======================================================================
 //======================================================================
 
-
 	tim_id_t TS_timer;
 	TS_timer = timerGetId();
 
@@ -196,15 +195,15 @@ void App_Run (void)
         getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
 
         // ==================================================================
-		//runControlStep(&eulerAngles, &eulerRates, speed);
-		//ESCSetSpeed(speed);
-
+	//	runControlStep(&eulerAngles, &eulerRates, speed);
+	//	ESCSetSpeed(speed);
+/*
 		if(timerExpired(timerUart)){
 			double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw};
 			sendUartMessage3Channels(tmp);
 			timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
 		}
-
+*/
 		gpioWrite(LOOP_TIME_PIN, LOW);
 		while(!timerExpired(TS_timer));
 		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
@@ -220,16 +219,16 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
-		{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-		{3.3181418, 0.5574807, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
-		{-0.0000000, -0.0000000, 3.3181418, 0.5574807, -0.0000000, -0.0000000},
-		{0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.9503350, 0.9558509}
+		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
+		{1.0148589, 0.2732957, 0.0000000, 0.0000000, -0.0000000, -0.0000000},
+		{0.0000000, 0.0000000, 1.0148589, 0.2732957, 0.0000000, 0.0000000},
+		{-0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.3072474, 0.3127304}
 };
 
 double Ki[KI_ROWS][KI_COLUMNS] = {
-		{-0.0000000, 0.0000000},
-		{0.9950204, -0.0000000},
-		{0.0000000, 0.9950204},
+		{0.0000000, 0.0000000},
+		{0.0704079, -0.0000000},
+		{-0.0000000, 0.0704079},
 		{0.0000000, -0.0000000}
 };
 

@@ -50,8 +50,8 @@ typedef struct {
  * @note: La entrada es por el pin PC3 y usa el UART1
 */
 void SBUSInit (SBUSData_t* SBUSData);
-
-
+uint8_t SBUSWriteMsg(uint8_t id, const char* msg, uint8_t cant);
+uint8_t SBUSuartReadMsg(uint8_t id, char* msg, uint8_t cant);
 /*******************************************************************************
  ******************************************************************************/
 

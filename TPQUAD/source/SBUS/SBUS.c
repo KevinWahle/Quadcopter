@@ -70,7 +70,7 @@ static const uint8_t UARTPinMuxAlt[] = {3, 3, 3, 3, 3};
 
 static SBUSData_t* pSBUSData;
 
-//static circularBuffer TxBuffer[UART_CANT_IDS];
+static circularBuffer TxBuffer[SBUS_CANT_IDS];
 static circularBuffer RxBuffer[SBUS_CANT_IDS];
 
 //typedef enum {
@@ -110,7 +110,7 @@ void SBUSInit (SBUSData_t* SBUSData) {
 // Pinout setup
 
 	portPtr[UARTPinPort[SBUS_UART_ID]]->PCR[UARTPinNumRX[SBUS_UART_ID]] = PORT_PCR_MUX(UARTPinMuxAlt[SBUS_UART_ID]);		// Borra otros flags
-
+	portPtr[1]->PCR[11] = PORT_PCR_MUX(3);		// Puerto B pin 11 alternativa 3
 // Baud rate config
 
 	uint32_t baudrate;
@@ -147,11 +147,75 @@ void SBUSInit (SBUSData_t* SBUSData) {
 
 
 // Initialize Buffer
+	CBinit(TxBuffer+SBUS_UART_ID, BUFFER_SIZE);
 	CBinit(RxBuffer+SBUS_UART_ID, BUFFER_SIZE);
+
 
 }
 
 
+/**
+ * @brief Check if a new byte was received
+ * @param id UART's number
+ * @return A new byte has being received
+*/
+bool SBUSuartIsRxMsg(uint8_t id){
+	return !CBisEmpty(RxBuffer+id);
+}
+
+
+/**
+ * @brief Check how many bytes were received
+ * @param id UART's number
+ * @return Quantity of received bytes
+*/
+uint8_t SBUSuartGetRxMsgLength(uint8_t id) {
+	return CBgetBufferState(RxBuffer+id);
+}
+
+
+/**
+ * @brief Read a received message. Non-Blocking
+ * @param id UART's number
+ * @param msg Buffer to paste the received bytes
+ * @param cant Desired quantity of bytes to be pasted
+ * @return Real quantity of pasted bytes
+*/
+uint8_t SBUSuartReadMsg(uint8_t id, char* msg, uint8_t cant) {
+
+	uint8_t i = 0;
+
+	hw_DisableInterrupts();
+	while (i++ < cant && CBgetBufferState(RxBuffer+id)) {
+		*(msg++) = CBgetByte(RxBuffer+id);			// Copy to msg
+	}
+	hw_EnableInterrupts();
+
+	return i-1;
+
+}
+
+
+
+/**
+ * @brief Write a message to be transmitted. Non-Blocking
+ * @param id UART's number
+ * @param msg Buffer with the bytes to be transfered
+ * @param cant Desired quantity of bytes to be transfered
+ * @return Real quantity of bytes to be transfered
+*/
+uint8_t SBUSWriteMsg(uint8_t id, const char* msg, uint8_t cant) {
+
+	hw_DisableInterrupts();
+	CBputChain(TxBuffer+id, msg, cant);
+	hw_EnableInterrupts();
+
+	// Enable Tx and their IRQs, this automatically starts sending data
+	UARTPorts[SBUS_UART_ID]->C2 |= UART_C2_TE_MASK | UART_C2_TIE_MASK;
+
+	return CBgetBufferState(TxBuffer+id);
+
+}
 /*******************************************************************************
  *******************************************************************************
                         LOCAL FUNCTION DEFINITIONS
@@ -159,6 +223,13 @@ void SBUSInit (SBUSData_t* SBUSData) {
  ******************************************************************************/
 
 static void UART_SBUS_IRQ() {
+	// COMENTAR ESTE IF CUANDO SE COMPILA NORMAL
+	/*
+	if (UARTPorts[SBUS_UART_ID]->S1 & UART_S1_RDRF_MASK) {	// Something received
+		CBputByte(RxBuffer + SBUS_UART_ID, UARTPorts[SBUS_UART_ID]->D);		// Flag cleaned when reading D buffer
+	}
+*/
+	// SOLO COMENTAR CUANDO SE COMPILA LA KINETIS SLAVE
 
 	if (UARTPorts[SBUS_UART_ID]->S1 & UART_S1_RDRF_MASK) {	// Something received
 
@@ -210,7 +281,18 @@ static void UART_SBUS_IRQ() {
 		}
 
 	}
-
+/*
+	if(UARTPorts[SBUS_UART_ID]->S1 & UART_S1_TDRE_MASK) {		// Buffer empty
+		if (!CBisEmpty(TxBuffer + SBUS_UART_ID)) {				// Keep sending
+			uint8_t data = CBgetByte(TxBuffer + SBUS_UART_ID);
+			UARTPorts[SBUS_UART_ID]->D = data;						// Flag cleaned when writing in D buffer
+		}
+		else {		// Nothing else to send -> IDLE State
+			UARTPorts[SBUS_UART_ID]->C2 &= ~(UART_C2_TE_MASK | UART_C2_TIE_MASK | UART_C2_TCIE_MASK);		// Turn off Tx and disable their IRQs
+//			UARTPorts[id]->C2 |= UART_C2_SBK_MASK	// Break character;
+		}
+	}
+*/
 }
 
 

@@ -445,8 +445,8 @@ Q(3, 3) = 1000;
 Q(4, 4) = 10;
 Q(5, 5) = 100;
 Q(6, 6) = 100;
-Q(7, 7) = 100;
-Q(8, 8) = 100;
+Q(7, 7) = 5;
+Q(8, 8) = 5;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -482,7 +482,7 @@ for i=13:14
     grid on
     title (mystr(i - 12), 'interpreter' , 'latex');
 end
-Ts = 570e-6;
+Ts = 1e-3;
 [Kd,S,e] = lqrd(Aaug, Baug, Q, R, Ts);
 
 Kx = Kd(:, 1:6);

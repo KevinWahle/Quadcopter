@@ -1,13 +1,5 @@
-/***************************************************************************//**
-  @file     App.c
-  @brief    TP2: Comunicacion Serie
-  @author   Grupo 5
- ******************************************************************************/
+#include "SBUS/SBUS.h"
 
-/*******************************************************************************
- * INCLUDE HEADER FILES
- ******************************************************************************/
-#include "SBUS.h"
 #include "MCAL/gpio.h"
 #include "timer/timer.h"
 #include "MCAL/board.h"
@@ -63,29 +55,14 @@ void App_Init (void)
 
 }
 
-static char strChannels[100];
-
 /* Función que se llama constantemente en un ciclo infinito */
 void App_Run (void)
 {
-
-	timerDelay(TIMER_MS2TICKS(100));
-
-/*
-	char str[256];
-	uint8_t num = 0;
-	for (uint8_t i = 0; i < 16; i++) {
-		num += sprintf(str+num, "%u,", sbus.channels[i]);
+	while (uartIsRxMsg(UART_ID_SBUS)) {
+		char c;
+		uartReadMsg(UART_ID_SBUS, &c, 1);
+		uartWriteMsg(UART_ID, &c, 1);
 	}
-	str[num-1] = '\n';*/
-
-	uint16_t charCount= sprintf(strChannels, "%.1f, %.1f, %.1f \r\n",
-						3.14, 2.47, 3.0);
-	//uartWriteMsg(UART_ID, strChannels, charCount);
-
-	SBUSWriteMsg(UART_ID_SBUS, strChannels, charCount);
-	//uartWriteMsg(UART_ID_SBUS, str, num);
-
 }
 
 

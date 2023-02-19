@@ -5,9 +5,9 @@
 ../source/App.c:70:6:App_Init	16	static
 ../source/App.c:99:13:startI2CreadingCallBack	8	static
 ../source/App.c:103:13:startI2C_ACCELEROMETER_CallBack	8	static
-../source/App.c:109:6:App_Run	344	static
-../source/App.c:236:6:runControlStep	248	static
-../source/App.c:257:15:getU1fromSBUS	16	static
-../source/App.c:276:13:getEulerAnglesRates	40	static
-../source/App.c:290:13:getAnglesGyro	64	static
-../source/App.c:322:13:getEulerAnglesRatesFAST	48	static
+../source/App.c:109:6:App_Run	320	static
+../source/App.c:235:6:runControlStep	248	static
+../source/App.c:256:15:getU1fromSBUS	16	static
+../source/App.c:275:13:getEulerAnglesRates	40	static
+../source/App.c:289:13:getAnglesGyro	64	static
+../source/App.c:321:13:getEulerAnglesRatesFAST	48	static
