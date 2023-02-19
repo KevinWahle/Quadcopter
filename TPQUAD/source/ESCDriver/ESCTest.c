@@ -41,16 +41,16 @@ void App_Init (void)
 }
 
 bool flag = 0;
-double speedY[MOTOR_COUNT];
-/*
+double speed[MOTOR_COUNT];
+
 void DIMMER_PWM(){
-    speed[0] = speed[0] + 0.05 > 1.0 ? 1.0 : speed[0] + 0.05;
-    speed[1] = speed[1] + 0.05 > 1.0 ? 1.0 : speed[1] + 0.05;
-    speed[2] = speed[2] + 0.05 > 1.0 ? 1.0 : speed[2] + 0.05;
-    speed[3] = speed[3] + 0.05 > 1.0 ? 1.0 : speed[3] + 0.05;
+    speed[0] = speed[0] + 0.0001 > 1.0 ? 1.0 : speed[0] + 0.0001;
+    speed[1] = speed[1] + 0.0001 > 1.0 ? 1.0 : speed[1] + 0.0001;
+    speed[2] = speed[2] + 0.0001 > 1.0 ? 1.0 : speed[2] + 0.0001;
+    speed[3] = speed[3] + 0.0001 > 1.0 ? 1.0 : speed[3] + 0.0001;
     ESCSetSpeed(speed);
 }
-*/
+
 /* Función que se llama constantemente en un ciclo infinito */
 void App_Run (void)
 {
@@ -63,11 +63,11 @@ void App_Run (void)
 	ESCArm();
 	timerDelay(TIMER_MS2TICKS(5000));
 	//timerStart(TS_timer, TIMER_MS2TICKS(100), TIM_MODE_PERIODIC, DIMMER_PWM);
-	speedY[0] = 0.6;
-	speedY[1] = 0.6;
-	speedY[2] = 0.6;
-	speedY[3] = 0.6;
-    ESCSetSpeed(speedY);
+	speed[0] = 0.6;
+	speed[1] = 0.6;
+	speed[2] = 0.6;
+	speed[3] = 0.6;
+    ESCSetSpeed(speed);
 	while(1);
 /*
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {

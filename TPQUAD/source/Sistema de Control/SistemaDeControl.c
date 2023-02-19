@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define COEFF_POLY {-3.1292, 3.3299, 0.1131}
+#define COEFF_POLY {-0.0313, 0.3330, 0.1131}
 #define MAX_INTEGRAL_ERROR 1    // TODO
 static const double coeffPoly[3] = COEFF_POLY;
 
@@ -51,10 +51,10 @@ void U2PWM(double U[KX_ROWS][1], double MotorsPWM[4]){
  	 U[3] = c*(F4 + F2 - F1 - F3)    (U4)
 */
 	double c = 10; // ????????????????????????????????????
-	double F1 = -(U[3][0] - U[0][0]*c + 2*U[2][0]*c)/(4*c);
-	double F2 = (U[3][0] + U[0][0]*c - 2*U[1][0]*c)/(4*c);
-	double F3 = (U[0][0]*c - U[3][0] + 2*U[2][0]*c)/(4*c);
-	double F4 = (U[3][0] + U[0][0]*c + 2*U[1][0]*c)/(4*c);
+	double F1 = (U[3][0] + U[0][0]*c - 2*U[1][0]*c)/(4*c);
+	double F2 = -(U[3][0] - U[0][0]*c + 2*U[2][0]*c)/(4*c);
+	double F3 = (U[3][0] + U[0][0]*c + 2*U[1][0]*c)/(4*c);
+	double F4 = (U[0][0]*c - U[3][0] + 2*U[2][0]*c)/(4*c);
 
 	// Mapping a motores nuestros
 	/*
@@ -63,10 +63,10 @@ void U2PWM(double U[KX_ROWS][1], double MotorsPWM[4]){
 	 	 M2* -> M1
 	 	 M3* -> M4
 	*/
-	MotorsPWM[0] = poly(F2) < 0.0 || poly(F2) > 1.0 ? MotorsPWM[0] : poly(F2);
-	MotorsPWM[1] = poly(F1) < 0.0 || poly(F1) > 1.0 ? MotorsPWM[1] : poly(F1);
-	MotorsPWM[2] = poly(F4) < 0.0 || poly(F4) > 1.0 ? MotorsPWM[2] : poly(F4);
-	MotorsPWM[3] = poly(F3) < 0.0 || poly(F3) > 1.0 ? MotorsPWM[3] : poly(F3);
+	MotorsPWM[0] = poly(F1) < 0.0 || poly(F1) > 1.0 ? MotorsPWM[0] : poly(F1);
+	MotorsPWM[1] = poly(F2) < 0.0 || poly(F2) > 1.0 ? MotorsPWM[1] : poly(F2);
+	MotorsPWM[2] = poly(F3) < 0.0 || poly(F3) > 1.0 ? MotorsPWM[2] : poly(F3);
+	MotorsPWM[3] = poly(F4) < 0.0 || poly(F4) > 1.0 ? MotorsPWM[3] : poly(F4);
 }
 
 static double poly(double Force){

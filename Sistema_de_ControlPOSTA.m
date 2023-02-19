@@ -439,14 +439,14 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 10000;
-Q(2, 2) = 100;
-Q(3, 3) = 10000;
-Q(4, 4) = 100;
-Q(5, 5) = 1000;
-Q(6, 6) = 1000;
-Q(7, 7) = 1000;
-Q(8, 8) = 1000;
+Q(1, 1) = 1000;
+Q(2, 2) = 10;
+Q(3, 3) = 1000;
+Q(4, 4) = 10;
+Q(5, 5) = 100;
+Q(6, 6) = 100;
+Q(7, 7) = 100;
+Q(8, 8) = 100;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -454,7 +454,7 @@ R(3, 3) = 1000;
 R(4, 4) = 1000;
 K = lqr(Aaug, Baug, Q, R);
 
-X0 = [20*DEG2RAD 0 -10*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0].';
+X0 = [20*DEG2RAD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0].';
 SetPointESTADOS = [0 0 0 0 0 0].';
 r = [SetPointESTADOS(1) SetPointESTADOS(3)].';
 tspan = 0:0.01:20;
@@ -563,16 +563,16 @@ x = [0.005
 0.72].';
 
 
-M3 = [5.435   4.635   3.835   3.035   2.325   1.435   0.635];
-PWM = [1.00     1.28     1.70     2.20     2.97     4.35     7.50  ];
-p = polyfit(x, y, 2);                                               % Quadratic Function Fit
-v = polyval(p, x);                                                  % Evaluate
-TSE = sum((v - y).^2);                                              % Total Squared Error
-figure(1)
-plot(x, y, 'bp')
-hold on
-plot(x, v, '-r')
-grid
+% M3 = [5.435   4.635   3.835   3.035   2.325   1.435   0.635];
+% PWM = [1.00     1.28     1.70     2.20     2.97     4.35     7.50  ];
+% p = polyfit(x, y, 2);                                               % Quadratic Function Fit
+% v = polyval(p, x);                                                  % Evaluate
+% TSE = sum((v - y).^2);                                              % Total Squared Error
+% figure(1)
+% plot(x, y, 'bp')
+% hold on
+% plot(x, v, '-r')
+% grid
 
 PWM = [0.05
 0.1
@@ -595,7 +595,7 @@ PWM = [0.05
 0.95
 1].';
 
-Forza = [0
+Forza = 10*[0
 0.005
 0.015
 0.025
@@ -623,13 +623,18 @@ figure(1)
 plot(Forza, PWM, 'bp')
 hold on
 plot(Forza, v, '-r')
-grid
+hold on
+clear s;
+pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
+s = -1:0.01:10;
+plot(s, pwm(s));
+grid on
 %% Solver 
 syms F1 F2 F3 F4 b U1 U2 U3 U4 c
 eqn1 = F1 + F2 + F3 + F4 == U1;
-eqn2 = F4 - F2 == U2;
-eqn3 = F3 - F1 == U3;
-eqn4 = -c*F1 - c*F3 + c*F2 + c*F4 == U4;
+eqn2 = F3 - F1 == U2;
+eqn3 = F4 - F2 == U3; 
+eqn4 = +c*F1 + c*F3 - c*F2 - c*F4 == U4;
 [A,B] = equationsToMatrix([eqn1, eqn2, eqn3, eqn4], [F1, F2, F3, F4])
 X = linsolve(A,B)
 
@@ -847,17 +852,31 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     F3_MISMATCH = 1;
     F4_MISMATCH = 1;
     
-    U(1) = 4.91;
+  % U(1) = 9;
+
     c = 10;
-    F1 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F1_MISMATCH;
-    F2 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c) * F2_MISMATCH;
-    F3 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c) * F3_MISMATCH;
-    F4 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c) * F4_MISMATCH;
+    U(1) = 9;
+    
+    F1 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c);
+    F2 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c);
+    F3 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c);
+    F4 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c);     
     
     U(1) = F1 + F2 + F3 + F4;
-    U(2) = F4 - F2;
-    U(1) = F3 - F1;
-    U(4) = -c*F1 - c*F3 + c*F2 + c*F4;
+    U(2) = F3 - F1;
+    U(3) = F4 - F2;
+    U(4) = +c*F1 + c*F3 - c*F2 - c*F4;
+
+%     c = 10;
+%     F1 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F1_MISMATCH;
+%     F2 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c) * F2_MISMATCH;
+%     F3 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c) * F3_MISMATCH;
+%     F4 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c) * F4_MISMATCH;
+%     
+%     U(1) = F1 + F2 + F3 + F4;
+%     U(2) = F4 - F2;
+%     U(1) = F3 - F1;
+%     U(4) = -c*F1 - c*F3 + c*F2 + c*F4;
     
     f(1,1) = X(2);
     f(2,1) = X(4)*X(6)*a1 + b1*(X(15));

@@ -17,6 +17,7 @@ SUBDIRS := \
 SDK/CMSIS \
 SDK/startup \
 source/ADC \
+source \
 source/CAN \
 source/CMP \
 source/ESCDriver \
