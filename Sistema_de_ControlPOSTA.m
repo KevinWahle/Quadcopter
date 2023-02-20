@@ -439,14 +439,14 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 50000;
+Q(1, 1) = 1000;
 Q(2, 2) = 10;
-Q(3, 3) = 50000;
+Q(3, 3) = 1000;
 Q(4, 4) = 10;
-Q(5, 5) = 100;
-Q(6, 6) = 100;
-Q(7, 7) = 300;
-Q(8, 8) = 300;
+Q(5, 5) = 10;
+Q(6, 6) = 10;
+Q(7, 7) = 0.001;
+Q(8, 8) = 0.001;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -638,10 +638,10 @@ eqn4 = +c*F1 + c*F3 - c*F2 - c*F4 == U4;
 [A,B] = equationsToMatrix([eqn1, eqn2, eqn3, eqn4], [F1, F2, F3, F4])
 X = linsolve(A,B)
 
-%% Test borrable
-Ts = 0.000570;
+%% Test para comparar con el codigo en C 
+Ts = 0.001;
 InputState = [0.1; 0.1; 0.1; 0.1 ;0.1 ;0.1];
-Reference = [0; 0; 0; 0; 0; 0];
+Reference = [0; 0.05; 0; 0; 3; 0];
 Int = zeros(2, 1);
 for i=1:3000
     ErrP = InputState - Reference;
@@ -847,10 +847,10 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
         U = [4.9 0 0 0];
     end
     
-    F1_MISMATCH = 1.1;
-    F2_MISMATCH = 1.1;
-    F3_MISMATCH = 0.9;
-    F4_MISMATCH = 0.9;
+    F1_MISMATCH = 1;
+    F2_MISMATCH = 1;
+    F3_MISMATCH = 1;
+    F4_MISMATCH = 1;
     
   % U(1) = 9;
 

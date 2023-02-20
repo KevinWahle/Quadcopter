@@ -42,6 +42,7 @@ typedef struct{
 #define LED_6 PORTNUM2PIN(PC, 10)
 #define LOOP_TIME_PIN PORTNUM2PIN(PB, 20)
 
+#define LPF_ACC_ALPHA 0.7f
 
 static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts);
 static void startI2CreadingCallBack();
@@ -59,6 +60,8 @@ EulerAngles AnglesIntegrated;
 tim_id_t I2CtriggerAcc;
 SBUSData_t sbus;
 
+EulerAnglesRates lastRates;
+
 static char strChannels[100];
 static void sendUartMessage3Channels(double* msg1)
 {
@@ -75,7 +78,6 @@ static void sendUartMessage6Channels(double* msg1)
 
 void App_Init (void)
 {
-
 	uart_cfg_t cfg = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
 	uartInit(UART_ID, cfg);
 	gpioMode (PORTNUM2PIN(PD, 0), OUTPUT);
@@ -125,11 +127,9 @@ void App_Run (void)
 		timerDelay(TIMER_MS2TICKS(750));
 	}
 
-	ESCInit();
 	gpioWrite(LED_1, HIGH); // Calibrations Start
+	ESCInit();
 	ESCCalibrate();
-	gpioWrite(LED_1, LOW); // Calibrations End
-
 //======================================================================
 //========================== Madwick init ==============================
 //======================================================================
@@ -199,26 +199,34 @@ void App_Run (void)
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         EulerAngles eulerAngles = {.pitch = euler.angle.pitch, .roll = euler.angle.roll, .yaw = euler.angle.yaw};
         EulerAnglesRates eulerRates;
-        //getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
+        getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
+
+
+        eulerRates.roll_dot = LPF_ACC_ALPHA * lastRates.roll_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.roll_dot;
+        eulerRates.pitch_dot = LPF_ACC_ALPHA * lastRates.pitch_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.pitch_dot;
+		eulerRates.yaw_dot = LPF_ACC_ALPHA * lastRates.yaw_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.yaw_dot;
+
+		lastRates.roll_dot = eulerRates.roll_dot;
+
 
         // ==================================================================
 		//runControlStep(&eulerAngles, &eulerRates, speed);
-        speed[0] = 0.25;
-        speed[1] = 0.25;
-        speed[2] = 0.25;
-        speed[3] = 0.25;
+		speed[0] = 0.22;
+		speed[1] = 0.22;
+		speed[2] = 0.22;
+		speed[3] = 0.22;
 		ESCSetSpeed(speed);
         //getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
 
 		if(timerExpired(timerUart)){
 
-			double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
+			//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
 
-			double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
+			//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
 
 
-			double tmp[6] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw, pitch, roll, 180};
-			sendUartMessage6Channels(tmp);
+			double tmp[6] = {eulerRates.roll_dot, eulerRates.pitch_dot, eulerRates.yaw_dot}; //, pitch, roll, 180};
+			sendUartMessage3Channels(tmp);
 			timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
 		}
 
@@ -237,16 +245,16 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
-		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
-		{7.0482786, 0.6779835, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-		{0.0000000, 0.0000000, 7.0482786, 0.6779835, -0.0000000, -0.0000000},
-		{0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.3072474, 0.3127304}
+		{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+		{0.9960235, 0.2710925, 0.0000000, 0.0000000, -0.0000000, 0.0000000},
+		{0.0000000, 0.0000000, 0.9960235, 0.2710925, 0.0000000, 0.0000000},
+		{-0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0990547, 0.1044402}
 };
 
 double Ki[KI_ROWS][KI_COLUMNS] = {
 		{-0.0000000, -0.0000000},
-		{0.5419046, 0.0000000},
-		{0.0000000, 0.5419046},
+		{0.0, 0.0000000},
+		{0.0000000, 0.0},
 		{0.0000000, -0.0000000}
 };
 
@@ -268,7 +276,7 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
 	//U[0][0] = getU1fromSBUS();
-	U[0][0] = 2.25;
+	U[0][0] = 3;
 	U2PWM(U, U_PWM);
 }
 

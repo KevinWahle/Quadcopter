@@ -1,9 +1,9 @@
 		%Acc[0] = LPF_ACC_ALPHA * AccPrev[0] + (1.0f - LPF_ACC_ALPHA) * Acc[0];
-alpha = 0.9
+alpha = 0.7
 b = [1-alpha];
 a = [1 -alpha];
 
-[h,f] = freqz(b,a ,1024 , 100);
+[h,f] = freqz(b,a ,1024 , 1000);
 
 plot(f, 20*log10(abs(h)))
 xlabel('Frecuencia (Hz)')
