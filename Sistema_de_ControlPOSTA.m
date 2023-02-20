@@ -439,14 +439,14 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 1000;
+Q(1, 1) = 5000;
 Q(2, 2) = 10;
-Q(3, 3) = 1000;
+Q(3, 3) = 5000;
 Q(4, 4) = 10;
 Q(5, 5) = 10;
 Q(6, 6) = 10;
-Q(7, 7) = 0.001;
-Q(8, 8) = 0.001;
+Q(7, 7) = 400;
+Q(8, 8) = 400;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -625,10 +625,10 @@ hold on
 plot(Forza, v, '-r')
 hold on
 clear s;
-pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
-s = -1:0.01:10;
-plot(s, pwm(s));
-grid on
+% pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
+% s = -1:0.01:10;
+% plot(s, pwm(s));
+% grid on
 %% Solver 
 syms F1 F2 F3 F4 b U1 U2 U3 U4 c
 eqn1 = F1 + F2 + F3 + F4 == U1;
@@ -667,7 +667,7 @@ f = @(a, b, x) a*x.^2 + b*x ;
 t = 0:0.01:1;
 X = double(X);
 for i = 1:cantCurvas
-    plot(f(X(1, i), X(2, i), t), t);
+    plot(9.8 * f(X(1, i), X(2, i), t), t);
     hold on 
     grid on
 end
@@ -847,8 +847,8 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
         U = [4.9 0 0 0];
     end
     
-    F1_MISMATCH = 1;
-    F2_MISMATCH = 1;
+    F1_MISMATCH = 1.1;
+    F2_MISMATCH = 1.1;
     F3_MISMATCH = 1;
     F4_MISMATCH = 1;
     
@@ -861,6 +861,9 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     F2 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F2_MISMATCH;
     F3 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c) * F3_MISMATCH;
     F4 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c) * F4_MISMATCH;     
+    
+    %% ACA va la K en las F
+  
     
     U(1) = F1 + F2 + F3 + F4;
     U(2) = F3 - F1;
