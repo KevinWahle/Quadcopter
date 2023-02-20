@@ -1,13 +1,3 @@
-/***************************************************************************//**
-  @file     App.c
-  @brief    TP2: Comunicacion Serie
-  @author   Grupo 5
- ******************************************************************************/
-
-/*******************************************************************************
- * INCLUDE HEADER FILES
- ******************************************************************************/
-#include "SBUS.h"
 #include "MCAL/gpio.h"
 #include "timer/timer.h"
 #include "MCAL/board.h"
@@ -22,7 +12,7 @@
 
 #define UART_ID			0
 #define UART_BAUDRATE	115200
-
+#define UART_TX			2
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -33,11 +23,8 @@
  *******************************************************************************
  ******************************************************************************/
 
-uint8_t cont[] = {1, 1, 1};
-
 tim_id_t timer;
 
-SBUSData_t sbus;
 
 /*******************************************************************************
  *******************************************************************************
@@ -51,30 +38,20 @@ void App_Init (void)
 
 	timerInit();
 
-	gpioMode(PIN_LED_RED, OUTPUT);
-	gpioMode(PIN_LED_GREEN, OUTPUT);
-
-	gpioWrite(PIN_LED_RED, HIGH);
-	gpioWrite(PIN_LED_GREEN, HIGH);
-
-	SBUSInit(&sbus);
 	uart_cfg_t cfg = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
 	uartInit(UART_ID, cfg);
 
-}
+	uart_cfg_t cfg2 = {.MSBF = false, .baudrate = UART_BAUDRATE, .parity = NO_PARITY};
+	uartInit(UART_TX, cfg2);
 
-/* Función que se llama constantemente en un ciclo infinito */
+}
 void App_Run (void)
 {
-	timerDelay(TIMER_MS2TICKS(100));
-
-	char str[256];
-	uint8_t num = 0;
-	for (uint8_t i = 0; i < 16; i++) {
-		num += sprintf(str+num, "%u,", sbus.channels[i]);
+	while (uartIsRxMsg(UART_ID)) {
+		char c;
+		uartReadMsg(UART_ID, &c, 1);
+		uartWriteMsg(UART_TX, &c, 1);
 	}
-	str[num-1] = '\n';
-	uartWriteMsg(UART_ID, str, num);
 }
 
 

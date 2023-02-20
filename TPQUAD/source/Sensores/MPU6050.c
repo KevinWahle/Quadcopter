@@ -278,6 +278,11 @@ static void mpu6050_raw2trueGyro(Gyro * gyroData)
 
 static void mpu6050_raw2trueAcc(Acc * accData)
 {
+
+	accelAverage[0] = 0.0;
+	accelAverage[1] = 0.0;    // EYE con esto , quizas hay que sacarlo
+	accelAverage[2] = 0.0;
+
 	accData->X = ((double)(accData->rawX + accelAverage[0]))/32767.0 * G_SCALE[Ascale];
 	accData->Y = ((double)(accData->rawY + accelAverage[1]))/32767.0 * G_SCALE[Ascale];
 	accData->Z = ((double)(accData->rawZ + accelAverage[2]))/32767.0 * G_SCALE[Ascale];

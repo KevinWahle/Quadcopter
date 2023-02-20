@@ -26,7 +26,6 @@ source/Fusion \
 source/I2Cm \
 source/MCAL \
 source/PIT \
-source/SBUS \
 source/SPI \
 source/Sensores \
 source/Sistema\ de\ Control \

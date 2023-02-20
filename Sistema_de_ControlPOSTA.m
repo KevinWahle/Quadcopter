@@ -439,14 +439,14 @@ Baug = [      B      ;
          zeros(2, 4)];
      
 Q = eye(8);
-Q(1, 1) = 1000;
+Q(1, 1) = 50000;
 Q(2, 2) = 10;
-Q(3, 3) = 1000;
+Q(3, 3) = 50000;
 Q(4, 4) = 10;
 Q(5, 5) = 100;
 Q(6, 6) = 100;
-Q(7, 7) = 5;
-Q(8, 8) = 5;
+Q(7, 7) = 300;
+Q(8, 8) = 300;
 R = eye(4);
 R(1, 1) = 1000;
 R(2, 2) = 1000;
@@ -847,20 +847,20 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
         U = [4.9 0 0 0];
     end
     
-    F1_MISMATCH = 1;
-    F2_MISMATCH = 1;
-    F3_MISMATCH = 1;
-    F4_MISMATCH = 1;
+    F1_MISMATCH = 1.1;
+    F2_MISMATCH = 1.1;
+    F3_MISMATCH = 0.9;
+    F4_MISMATCH = 0.9;
     
   % U(1) = 9;
 
     c = 10;
     U(1) = 9;
     
-    F1 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c);
-    F2 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c);
-    F3 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c);
-    F4 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c);     
+    F1 = (U(4) + U(1)*c - 2*U(2)*c)/(4*c) * F1_MISMATCH;
+    F2 = -(U(4) - U(1)*c + 2*U(3)*c)/(4*c) * F2_MISMATCH;
+    F3 = (U(4) + U(1)*c + 2*U(2)*c)/(4*c) * F3_MISMATCH;
+    F4 = (U(1)*c - U(4) + 2*U(3)*c)/(4*c) * F4_MISMATCH;     
     
     U(1) = F1 + F2 + F3 + F4;
     U(2) = F3 - F1;

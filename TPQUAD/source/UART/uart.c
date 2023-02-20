@@ -57,9 +57,9 @@ static const uint32_t UARTSIMMask[] = {SIM_SCGC4_UART0_MASK, SIM_SCGC4_UART1_MAS
 static const IRQn_Type UART_RX_TX_Vectors[] = UART_RX_TX_IRQS;
 //static const IRQn_Type UART_ERR_Vectors[] = UART_ERR_IRQS;
 
-static const uint8_t UARTPinPort[] = {PB, PC, PD, PB, PE};
+static const uint8_t UARTPinPort[] = {PB, PC, PD, PC, PE};
 
-static const uint8_t UARTPinNumRX[] = {16, 3, 2, 10, 24};
+static const uint8_t UARTPinNumRX[] = {16, 3, 2, 16, 24};
 static const uint8_t UARTPinNumTX[] = {17, 4, 3, 11, 25};
 static const uint8_t UARTPinMuxAlt[] = {3, 3, 3, 3, 3};
 
@@ -263,17 +263,17 @@ __ISR__ UART0_RX_TX_IRQHandler(void){
 #endif
 }
 
-//__ISR__ UART1_RX_TX_IRQHandler(void){
-//#ifdef ENABLE_TP
-//	gpioWrite(TP_PIN, HIGH);
-//#endif
-//
-//	UART_Rx_Tx_IRQ(1);
-//
-//#ifdef ENABLE_TP
-//	gpioWrite(TP_PIN, LOW);
-//#endif
-//}
+__ISR__ UART1_RX_TX_IRQHandler(void){
+#ifdef ENABLE_TP
+	gpioWrite(TP_PIN, HIGH);
+#endif
+
+	UART_Rx_Tx_IRQ(1);
+
+#ifdef ENABLE_TP
+	gpioWrite(TP_PIN, LOW);
+#endif
+}
 
 __ISR__ UART2_RX_TX_IRQHandler(void){
 #ifdef ENABLE_TP
@@ -286,7 +286,7 @@ __ISR__ UART2_RX_TX_IRQHandler(void){
 	gpioWrite(TP_PIN, LOW);
 #endif
 }
-/*
+
 __ISR__ UART3_RX_TX_IRQHandler(void){
 #ifdef ENABLE_TP
 	gpioWrite(TP_PIN, HIGH);
@@ -298,7 +298,7 @@ __ISR__ UART3_RX_TX_IRQHandler(void){
 	gpioWrite(TP_PIN, LOW);
 #endif
 }
-*/
+
 __ISR__ UART4_RX_TX_IRQHandler(void){
 #ifdef ENABLE_TP
 	gpioWrite(TP_PIN, HIGH);

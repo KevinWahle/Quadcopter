@@ -15,7 +15,6 @@ RM := rm -rf
 -include source/Sistema\ de\ Control/subdir.mk
 -include source/Sensores/subdir.mk
 -include source/SPI/subdir.mk
--include source/SBUS/subdir.mk
 -include source/PIT/subdir.mk
 -include source/MCAL/subdir.mk
 -include source/I2Cm/subdir.mk

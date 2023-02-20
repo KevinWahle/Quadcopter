@@ -52,6 +52,7 @@ static void startI2C_ACCELEROMETER_CallBack();
 static void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]);
 static double getU1fromSBUS();
 static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
+static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts);
 Acc accelData;
 Gyro gyroData;
 EulerAngles AnglesIntegrated;
@@ -65,7 +66,12 @@ static void sendUartMessage3Channels(double* msg1)
 						msg1[0], msg1[1], msg1[2]);
 	uartWriteMsg(UART_ID, strChannels, charCount);
 }
-
+static void sendUartMessage6Channels(double* msg1)
+{
+	uint16_t charCount= sprintf(strChannels, "%.1f, %.1f, %.1f,%.1f, %.1f, %.1f \r\n",
+						msg1[0], msg1[1], msg1[2], msg1[3], msg1[4], msg1[5]);
+	uartWriteMsg(UART_ID, strChannels, charCount);
+}
 
 void App_Init (void)
 {
@@ -90,8 +96,7 @@ void App_Init (void)
 	gpioMode(LOOP_TIME_PIN, OUTPUT);
 	gpioWrite(LOOP_TIME_PIN, LOW);
 
-	SBUSInit(&sbus);
-	ESCInit();
+	//SBUSInit(&sbus);
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
 
 
@@ -108,9 +113,7 @@ static void startI2C_ACCELEROMETER_CallBack(){
 }
 void App_Run (void)
 {
-	gpioWrite(LED_1, HIGH); // Calibrations Start
-	ESCCalibrate();
-	gpioWrite(LED_1, LOW); // Calibrations End
+
 	timerInit();
 	for(uint8_t i = 0; i < 6; i++){
 		gpioToggle(LED_1);
@@ -122,6 +125,10 @@ void App_Run (void)
 		timerDelay(TIMER_MS2TICKS(750));
 	}
 
+	ESCInit();
+	gpioWrite(LED_1, HIGH); // Calibrations Start
+	ESCCalibrate();
+	gpioWrite(LED_1, LOW); // Calibrations End
 
 //======================================================================
 //========================== Madwick init ==============================
@@ -171,7 +178,7 @@ void App_Run (void)
 	mpu6050_readAccelData(&accelData);
 
 	timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
-	timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
+	timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
 
 	startI2CreadingCallBack();
 	double speed[4] = {0.0, 0.0, 0.0, 0.0};
@@ -192,18 +199,29 @@ void App_Run (void)
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         EulerAngles eulerAngles = {.pitch = euler.angle.pitch, .roll = euler.angle.roll, .yaw = euler.angle.yaw};
         EulerAnglesRates eulerRates;
-        getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
+        //getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
 
         // ==================================================================
-	//	runControlStep(&eulerAngles, &eulerRates, speed);
-	//	ESCSetSpeed(speed);
-/*
+		//runControlStep(&eulerAngles, &eulerRates, speed);
+        speed[0] = 0.25;
+        speed[1] = 0.25;
+        speed[2] = 0.25;
+        speed[3] = 0.25;
+		ESCSetSpeed(speed);
+        //getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
+
 		if(timerExpired(timerUart)){
-			double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw};
-			sendUartMessage3Channels(tmp);
-			timerStart(timerUart, TIMER_MS2TICKS(20), TIM_MODE_SINGLESHOT, NULL);
+
+			double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
+
+			double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
+
+
+			double tmp[6] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw, pitch, roll, 180};
+			sendUartMessage6Channels(tmp);
+			timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
 		}
-*/
+
 		gpioWrite(LOOP_TIME_PIN, LOW);
 		while(!timerExpired(TS_timer));
 		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
@@ -220,15 +238,15 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
 		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
-		{1.0148589, 0.2732957, 0.0000000, 0.0000000, -0.0000000, -0.0000000},
-		{0.0000000, 0.0000000, 1.0148589, 0.2732957, 0.0000000, 0.0000000},
-		{-0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.3072474, 0.3127304}
+		{7.0482786, 0.6779835, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+		{0.0000000, 0.0000000, 7.0482786, 0.6779835, -0.0000000, -0.0000000},
+		{0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.3072474, 0.3127304}
 };
 
 double Ki[KI_ROWS][KI_COLUMNS] = {
-		{0.0000000, 0.0000000},
-		{0.0704079, -0.0000000},
-		{-0.0000000, 0.0704079},
+		{-0.0000000, -0.0000000},
+		{0.5419046, 0.0000000},
+		{0.0000000, 0.5419046},
 		{0.0000000, -0.0000000}
 };
 
@@ -249,7 +267,8 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
 	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
-	U[0][0] = getU1fromSBUS();
+	//U[0][0] = getU1fromSBUS();
+	U[0][0] = 2.25;
 	U2PWM(U, U_PWM);
 }
 
@@ -290,20 +309,15 @@ static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts
 
 	static EulerAngles lastAngle = {.roll = 0, .pitch = 0, .yaw = 0};
 	double phi_dot = GyroRates_rad->X +
-					 GyroRates_rad->Y*sin(lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD) +
-					 GyroRates_rad->Z*cos(lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD);
+					 GyroRates_rad->Y*arm_sin_f32(lastAngle.roll*DEG2RAD)*(arm_sin_f32(lastAngle.pitch*DEG2RAD)/arm_cos_f32(lastAngle.pitch*DEG2RAD)) +
+					 GyroRates_rad->Z*arm_cos_f32(lastAngle.roll*DEG2RAD)*(arm_sin_f32(lastAngle.pitch*DEG2RAD)/arm_cos_f32(lastAngle.pitch*DEG2RAD));
 
-/*	double phi_dot = GyroRates_rad->X +
-					 GyroRates_rad->Y*arm_sin_f32((float32_t)lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD) +
-					 GyroRates_rad->Z*cos(lastAngle.roll*DEG2RAD)*tan(lastAngle.pitch*DEG2RAD);
-*/
-
-	double theta_dot = GyroRates_rad->Y*cos(lastAngle.roll*DEG2RAD) -
-					   GyroRates_rad->Z*sin(lastAngle.roll*DEG2RAD);
+	double theta_dot = GyroRates_rad->Y*arm_cos_f32(lastAngle.roll*DEG2RAD) -
+					   GyroRates_rad->Z*arm_sin_f32(lastAngle.roll*DEG2RAD);
 
 	//psidot=(qsin(0)-rcos(0))*sec(1)
-	double psi_dot = (GyroRates_rad->Y*sin(lastAngle.roll*DEG2RAD) +
-					  GyroRates_rad->Z*cos(lastAngle.roll*DEG2RAD))/cos(lastAngle.pitch*DEG2RAD);
+	double psi_dot = (GyroRates_rad->Y*arm_sin_f32(lastAngle.roll*DEG2RAD) +
+					  GyroRates_rad->Z*arm_cos_f32(lastAngle.roll*DEG2RAD))/arm_cos_f32(lastAngle.pitch*DEG2RAD);
 
 	/*double phi_dot = GyroRates_rad->X;
 	double theta_dot = GyroRates_rad->Y;

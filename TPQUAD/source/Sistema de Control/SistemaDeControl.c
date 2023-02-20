@@ -41,8 +41,6 @@ void denormalized_U_total(double outKx[KX_ROWS][1], double outKi[KI_ROWS][1], do
 	matrix_add_sub(KX_ROWS, 1, outKx, '-', outKi, output);
 }
 
-
-
 void U2PWM(double U[KX_ROWS][1], double MotorsPWM[4]){
 /*
  	 U[0] = F1 + F2 + F3 + F4        (U1)
