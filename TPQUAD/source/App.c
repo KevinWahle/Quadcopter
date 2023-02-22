@@ -64,7 +64,8 @@ SBUSData_t sbus;
 FusionAhrsFlags fusionFlags;
 bool initialising = true;
 double speed[4] = {0.0, 0.0, 0.0, 0.0};
-BiQuad filter_roll_dot, filter_pitch_dot, filter_yaw_dot;
+BiQuad filter_roll_dot_stgs[5];
+BiQuad filter_pitch_dot_stgs[5];
 
 bool flagBorrable = false;
  
@@ -111,11 +112,31 @@ void App_Init (void)
 
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
 
+double b[5][3] = {
+	{0.0095958, 0.0191915, 0.0095958},
+	{0.1084782, 0.1084782, 0.0000000},
+	{0.0293045, 0.0586090, 0.0293045},
+	{0.0179138, 0.0358276, 0.0179138},
+	{0.0468088, 0.0936176, 0.0468088}
+};
 
-	BiQuad_init(&filter_roll_dot);
-	BiQuad_init(&filter_pitch_dot);
-	BiQuad_init(&filter_yaw_dot);
-	//controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
+double a[5][3] = {
+	{1.0000000, -1.7792211, 0.8851647},
+	{1.0000000, -0.9213973, 0.0000000},
+	{1.0000000, -1.7306458, 0.9736852},
+	{1.0000000, -1.8238846, 0.8584440},
+	{1.0000000, -1.7378414, 0.9250766}
+};
+
+
+	for (uint8_t i = 0; i < 5; i++)
+	{
+		BiQuad_init(&filter_pitch_dot_stgs[i], b[i], a[i]);
+		BiQuad_init(&filter_roll_dot_stgs[i], b[i], a[i]);
+	}
+	
+
+	controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
 
 
 }
@@ -217,16 +238,19 @@ void App_Run (void)
         EulerAnglesRates eulerRates;
         getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
 
-		eulerRates.roll_dot = BiQuad_filter(&filter_roll_dot, eulerRates.roll_dot);
-		eulerRates.pitch_dot = BiQuad_filter(&filter_pitch_dot, eulerRates.pitch_dot);
-		eulerRates.yaw_dot = BiQuad_filter(&filter_yaw_dot, eulerRates.yaw_dot);
+		for (uint8_t i = 0; i < 5; i++)
+		{
+			eulerRates.roll_dot = BiQuad_filter(&filter_roll_dot_stgs[i], eulerRates.roll_dot);
+			eulerRates.pitch_dot = BiQuad_filter(&filter_pitch_dot_stgs[i], eulerRates.pitch_dot);
+		}
+		
         // ==================================================================
 		if(initialising == false){     // si ya inicializo, corro el sistema de control
-			//runControlStep(&eulerAngles, &eulerRates, speed);
-			speed[0] = 0.25;
-			speed[1] = 0.25;
-			speed[2] = 0.25;
-			speed[3] = 0.25;
+			runControlStep(&eulerAngles, &eulerRates, speed);
+			/*speed[0] = 0.2;
+			speed[1] = 0.2;
+			speed[2] = 0.2;
+			speed[3] = 0.2;*/
 			ESCSetSpeed(speed);
 	/*
 			if(timerExpired(timerStationary) || flagBorrable){
@@ -241,7 +265,7 @@ void App_Run (void)
 			}
 	*/
 			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
-
+/*
 			if(timerExpired(timerUart)){
 				//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
 				//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
@@ -249,7 +273,7 @@ void App_Run (void)
 				double tmp[3] = {eulerRates.roll_dot, eulerRates.pitch_dot, eulerRates.yaw_dot};
 				sendUartMessage3Channels(tmp);
 				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
-			}
+			}*/
 		}
 		else{
 			fusionFlags = FusionAhrsGetFlags(&ahrs);
@@ -282,24 +306,26 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
-		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000},
-		{2.3320708, 0.3983856, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-		{0.0000000, 0.0000000, 2.3320708, 0.3983856, 0.0000000, 0.0000000},
-		{0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0990547, 0.1044402}
+	{-0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+	{5.1498579, 0.5732894, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
+	{0.0000000, -0.0000000, 5.1498579, 0.5732894, -0.0000000, -0.0000000},
+	{0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.3072474, 0.3127304}
 };
 
 double Ki[KI_ROWS][KI_COLUMNS] = {
-		{-0.0000000, -0.0000000},
-		{0.6285079, 0.0000000},
-		{0.0000000, 0.6285079},
-		{0.0000000, -0.0000000}
+	{0.0000000, 0.0000000},
+	{1.7164943, -0.0000000},
+	{-0.0000000, 1.7164943},
+	{-0.0000000, -0.0000000}
 };
 
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]){
 	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}};
 	double outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
-	integrateError(statesIntegrator, referenceIntegrator,
+	bool saturation = integrateError(statesIntegrator, referenceIntegrator,
 				   1e-3, outputIntError, Ki[1][0]);
+	gpioWrite(LED_6, saturation);
+
 
 	double outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR][1];
 	double statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {AnglesRates->roll_dot * DEG2RAD}, {Angles->pitch * DEG2RAD}, {AnglesRates->pitch_dot * DEG2RAD}, {Angles->yaw * DEG2RAD}, {AnglesRates->yaw_dot * DEG2RAD}};
@@ -313,6 +339,13 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
 	U[0][0] = (double)getDataFromPC();
+	//U[0][0] = 3;
+	if(U[0][0] > 8){
+		gpioWrite(LED_2, HIGH);
+	}
+	else
+		gpioWrite(LED_2, LOW);
+
 	U2PWM(U, U_PWM);
 }
 

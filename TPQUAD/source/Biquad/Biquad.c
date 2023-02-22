@@ -8,14 +8,14 @@
 
 
 
-void BiQuad_init(BiQuad* bq) {
+void BiQuad_init(BiQuad* bq, double b[3], double a[3]) {
 
-    double b0 = 0.8549;
-    double b1 = -1.0693;
-    double b2 = 0.8226;
-    double a0 = 1.0000;
-    double a1 = -1.0693;
-    double a2 = 0.6775;
+    double b0 = b[0];
+    double b1 = b[1];
+    double b2 = b[2];
+    double a0 = a[0];
+    double a1 = a[1];
+    double a2 = a[2];
 
     bq->b0 = b0/a0;
     bq->b1 = b1/a0;

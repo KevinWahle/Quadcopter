@@ -4,6 +4,8 @@
 #ifndef _SISTEMA_DE_CONTROL_H_
 #define _SISTEMA_DE_CONTROL_H_
 
+#include <stdbool.h>
+
 #define ROWS_INTEGRATOR_ERROR_VECTOR 2
 #define ROWS_PROPORTIONAL_ERROR_VECTOR 6
 
@@ -13,7 +15,7 @@
 #define KI_ROWS 4
 #define KI_COLUMNS 2
 
-void integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], double reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
+bool integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], double reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
 					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR][1], double KiVal);
 
 void proportionalError(double newStates[ROWS_PROPORTIONAL_ERROR_VECTOR][1], double reference[ROWS_PROPORTIONAL_ERROR_VECTOR][1],

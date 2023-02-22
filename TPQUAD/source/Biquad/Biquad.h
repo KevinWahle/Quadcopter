@@ -13,7 +13,7 @@ typedef struct {
     double x1, x2, y1, y2;     // filter state variables
 } BiQuad;
 
-void BiQuad_init(BiQuad* bq);
+void BiQuad_init(BiQuad* bq, double b[3], double a[3]);
 
 double BiQuad_filter(BiQuad* bq, double input);
 

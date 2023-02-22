@@ -13,6 +13,7 @@
         "*.ipp": "c",
         "cmath": "c",
         "math.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "biquad.h": "c"
     }
 }

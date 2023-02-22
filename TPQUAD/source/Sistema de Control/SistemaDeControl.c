@@ -2,12 +2,13 @@
 #include "SistemaDeControl.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define COEFF_POLY {-0.0313, 0.3330, 0.1131}
 
 // Defino que el ajuste por integral no puede ser mayor a 1N de diferencia
 
-#define MAX_INTEGRAL_ERROR_NEWTON	0.2    // 0.2 Newton
+#define MAX_INTEGRAL_ERROR_NEWTON	0.4    // 0.2 Newton
 
 
 
@@ -19,20 +20,23 @@ static double poly(double Force);
 /*
  *  newStates un vector de [phi_k, theta_k]
  */
-void integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], double reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
+bool integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], double reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
 					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR][1], double KiVal){
+	bool saturation = false;
 	double sub[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, newStates, '-', reference, sub);
 	scalar_mult(ROWS_INTEGRATOR_ERROR_VECTOR, 1, Ts, sub);
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, lastIntegrateError, '+', sub, output);
-	if(output[0][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal){
-		output[0][0] = MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+	if(output[0][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal || output[0][0] < -MAX_INTEGRAL_ERROR_NEWTON/KiVal){
+		output[0][0] = output[0][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON/KiVal : -MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+		saturation = true;
 	}
-	if(output[1][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal){
-		output[1][0] = MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+	if(output[1][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal || output[1][0] < -MAX_INTEGRAL_ERROR_NEWTON/KiVal){
+		output[1][0] = output[1][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON/KiVal : -MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+		saturation = true;
 	}
 	memcpy(lastIntegrateError, output, sizeof(double)*ROWS_INTEGRATOR_ERROR_VECTOR);
-
+	return saturation;
 }
 
 void proportionalError(double newStates[ROWS_PROPORTIONAL_ERROR_VECTOR][1], double reference[ROWS_PROPORTIONAL_ERROR_VECTOR][1],
