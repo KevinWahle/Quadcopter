@@ -14,6 +14,7 @@
 #include "SBUS/SBUS.h"
 #include <arm_math.h>
 #include "ControlPC/ControlPC.h"
+#include "Biquad/Biquad.h"
 
 typedef struct{
 	double roll;
@@ -63,8 +64,12 @@ SBUSData_t sbus;
 FusionAhrsFlags fusionFlags;
 bool initialising = true;
 double speed[4] = {0.0, 0.0, 0.0, 0.0};
-//static int8_t megaTabla[2048];
-//static uint16_t indexMegaTabla;
+BiQuad filter_roll_dot, filter_pitch_dot, filter_yaw_dot;
+
+bool flagBorrable = false;
+ 
+static int8_t megaTabla[2048]; // Debug purposes
+static uint16_t indexMegaTabla; // Debug purposes
 
 EulerAnglesRates lastRates;
 
@@ -106,7 +111,12 @@ void App_Init (void)
 
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
 
+
+	BiQuad_init(&filter_roll_dot);
+	BiQuad_init(&filter_pitch_dot);
+	BiQuad_init(&filter_yaw_dot);
 	//controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
+
 
 }
 static void startI2CreadingCallBack(){
@@ -183,7 +193,7 @@ void App_Run (void)
 
 	timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
-	timerStart(timerStationary, TIMER_MS2TICKS(5000), TIM_MODE_SINGLESHOT, NULL);
+	timerStart(timerStationary, TIMER_MS2TICKS(10000), TIM_MODE_SINGLESHOT, NULL);
 
 
 	startI2CreadingCallBack();  // lanzo la primer leida de Gyro y Accel
@@ -207,13 +217,9 @@ void App_Run (void)
         EulerAnglesRates eulerRates;
         getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
 
-/*
-        eulerRates.roll_dot = LPF_ACC_ALPHA * lastRates.roll_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.roll_dot;
-        eulerRates.pitch_dot = LPF_ACC_ALPHA * lastRates.pitch_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.pitch_dot;
-		eulerRates.yaw_dot = LPF_ACC_ALPHA * lastRates.yaw_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.yaw_dot;
-
-		lastRates.roll_dot = eulerRates.roll_dot;
-*/
+		eulerRates.roll_dot = BiQuad_filter(&filter_roll_dot, eulerRates.roll_dot);
+		eulerRates.pitch_dot = BiQuad_filter(&filter_pitch_dot, eulerRates.pitch_dot);
+		eulerRates.yaw_dot = BiQuad_filter(&filter_yaw_dot, eulerRates.yaw_dot);
         // ==================================================================
 		if(initialising == false){     // si ya inicializo, corro el sistema de control
 			//runControlStep(&eulerAngles, &eulerRates, speed);
@@ -223,12 +229,15 @@ void App_Run (void)
 			speed[3] = 0.25;
 			ESCSetSpeed(speed);
 	/*
-			if(timerExpired(timerStationary)){
-				gpioWrite(LED_6, HIGH);
+			if(timerExpired(timerStationary) || flagBorrable){
+				flagBorrable = true;
 				if(indexMegaTabla < 2048){
+					gpioWrite(LED_6, HIGH);
 					megaTabla[indexMegaTabla] = (int8_t)eulerRates.roll_dot;
 					indexMegaTabla++;
 				}
+				else 
+					gpioWrite(LED_6, LOW);
 			}
 	*/
 			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
@@ -255,6 +264,13 @@ void App_Run (void)
 		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	}
 	ESCDisarm();
+/*
+	timerDelay(TIMER_MS2TICKS(3000));
+	for (uint16_t i = 0; i < 2048; i++)
+	{
+		printf("%d, ", megaTabla[i]);
+	}
+*/	
 
 	while(1){                                // forever blink
 		gpioToggle(LED_1);

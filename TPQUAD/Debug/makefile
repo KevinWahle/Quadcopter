@@ -24,6 +24,7 @@ RM := rm -rf
 -include source/ControlPC/subdir.mk
 -include source/CMP/subdir.mk
 -include source/CAN/subdir.mk
+-include source/Biquad/subdir.mk
 -include source/ADC/subdir.mk
 -include source/subdir.mk
 -include SDK/startup/subdir.mk

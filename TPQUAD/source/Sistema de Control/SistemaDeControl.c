@@ -7,7 +7,7 @@
 
 // Defino que el ajuste por integral no puede ser mayor a 1N de diferencia
 
-#define MAX_INTEGRAL_ERROR_NEWTON	1    // 1 Newton
+#define MAX_INTEGRAL_ERROR_NEWTON	0.2    // 0.2 Newton
 
 
 

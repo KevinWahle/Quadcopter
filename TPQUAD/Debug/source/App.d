@@ -10,7 +10,7 @@ source/App.o source/App.d: ../source/App.c ../source/timer/timer.h \
  ../source/ESCDriver/ESCDriver.h ../source/UART/UART.h \
  ../source/SBUS/SBUS.h ../SDK/CMSIS/DSP/Include/arm_math.h \
  ../SDK/CMSIS/cmsis_compiler.h ../SDK/CMSIS/cmsis_gcc.h \
- ../source/ControlPC/ControlPC.h
+ ../source/ControlPC/ControlPC.h ../source/Biquad/Biquad.h
 ../source/timer/timer.h:
 ../source/UART/uart.h:
 ../source/MCAL/gpio.h:
@@ -35,3 +35,4 @@ source/App.o source/App.d: ../source/App.c ../source/timer/timer.h \
 ../SDK/CMSIS/cmsis_compiler.h:
 ../SDK/CMSIS/cmsis_gcc.h:
 ../source/ControlPC/ControlPC.h:
+../source/Biquad/Biquad.h:
