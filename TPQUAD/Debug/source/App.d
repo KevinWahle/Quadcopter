@@ -9,7 +9,8 @@ source/App.o source/App.d: ../source/App.c ../source/timer/timer.h \
  ../source/Sistema\ de\ Control/SistemaDeControl.h \
  ../source/ESCDriver/ESCDriver.h ../source/UART/UART.h \
  ../source/SBUS/SBUS.h ../SDK/CMSIS/DSP/Include/arm_math.h \
- ../SDK/CMSIS/cmsis_compiler.h ../SDK/CMSIS/cmsis_gcc.h
+ ../SDK/CMSIS/cmsis_compiler.h ../SDK/CMSIS/cmsis_gcc.h \
+ ../source/ControlPC/ControlPC.h
 ../source/timer/timer.h:
 ../source/UART/uart.h:
 ../source/MCAL/gpio.h:
@@ -33,3 +34,4 @@ source/App.o source/App.d: ../source/App.c ../source/timer/timer.h \
 ../SDK/CMSIS/DSP/Include/arm_math.h:
 ../SDK/CMSIS/cmsis_compiler.h:
 ../SDK/CMSIS/cmsis_gcc.h:
+../source/ControlPC/ControlPC.h:

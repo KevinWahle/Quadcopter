@@ -14,7 +14,7 @@
 #define KI_COLUMNS 2
 
 void integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], double reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
-					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR][1]);
+					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR][1], double KiVal);
 
 void proportionalError(double newStates[ROWS_PROPORTIONAL_ERROR_VECTOR][1], double reference[ROWS_PROPORTIONAL_ERROR_VECTOR][1],
 					   double output[ROWS_PROPORTIONAL_ERROR_VECTOR][1]);

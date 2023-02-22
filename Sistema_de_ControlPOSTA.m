@@ -1,3 +1,4 @@
+%% Section 1
 syms theta phi psi
 
 Rx = [1         0                0    ;
@@ -67,12 +68,12 @@ for i=1:12
    B(i,:) = gradient (f(i), [U1 U2 U3 U4]).';
 end 
    
-m = 0.506;
-g = 9.8;
-l = 0.235;
-Ixx = 8.12e-5;
-Iyy = 8.12e-5;
-Izz = 6.12e-5;
+% m = 0.506;
+% g = 9.8;
+% l = 0.235;
+% Ixx = 8.12e-5;
+% Iyy = 8.12e-5;
+% Izz = 6.12e-5;
 U1=-m*g;
 U2=0;
 U3=0;
@@ -123,7 +124,6 @@ Q(6, 6) = 10;
 Q(7, 7) = 50;
 R = 10*eye(4);
 K = lqr(A, B, Q, R);
-
 X0 = [0.8 0 0 0 0 0 0 0 0 0 0 0].';
 SetPoint = [0 0 0 0 0 0 0 0 0 0 5 0].';
 tspan = [0:0.01:7];
@@ -167,6 +167,7 @@ y = zeros(length(tspan), 12);
 t = zeros(length(tspan), 1);
 IC = zeros(12, TotalRefreshes);
 IC(:, 1) = X0; 
+
 
 [Kd,S,e] = lqrd(A,B,Q,R,Ts);
 
@@ -625,10 +626,10 @@ hold on
 plot(Forza, v, '-r')
 hold on
 clear s;
-% pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
-% s = -1:0.01:10;
-% plot(s, pwm(s));
-% grid on
+pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
+s = -1:0.01:10;
+plot(s, pwm(s));
+grid on
 %% Solver 
 syms F1 F2 F3 F4 b U1 U2 U3 U4 c
 eqn1 = F1 + F2 + F3 + F4 == U1;
@@ -671,6 +672,7 @@ for i = 1:cantCurvas
     hold on 
     grid on
 end
+
 
 %% En base a las curvas anteriores vamos a
 %% Funciones:
@@ -848,9 +850,9 @@ function f = nonlinear_function_angularStates_Integrators(X, SetPointESTADOS, K,
     end
     
     F1_MISMATCH = 1.1;
-    F2_MISMATCH = 1.1;
-    F3_MISMATCH = 1;
-    F4_MISMATCH = 1;
+    F2_MISMATCH = 1;
+    F3_MISMATCH = 0.9;
+    F4_MISMATCH = 1.05;
     
   % U(1) = 9;
 

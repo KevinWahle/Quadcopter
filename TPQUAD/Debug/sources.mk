@@ -20,6 +20,7 @@ source/ADC \
 source \
 source/CAN \
 source/CMP \
+source/ControlPC \
 source/ESCDriver \
 source/FTM \
 source/Fusion \

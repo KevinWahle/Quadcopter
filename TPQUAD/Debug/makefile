@@ -21,6 +21,7 @@ RM := rm -rf
 -include source/Fusion/subdir.mk
 -include source/FTM/subdir.mk
 -include source/ESCDriver/subdir.mk
+-include source/ControlPC/subdir.mk
 -include source/CMP/subdir.mk
 -include source/CAN/subdir.mk
 -include source/ADC/subdir.mk

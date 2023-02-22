@@ -4,7 +4,13 @@
 #include <string.h>
 
 #define COEFF_POLY {-0.0313, 0.3330, 0.1131}
-#define MAX_INTEGRAL_ERROR 1    // TODO
+
+// Defino que el ajuste por integral no puede ser mayor a 1N de diferencia
+
+#define MAX_INTEGRAL_ERROR_NEWTON	1    // 1 Newton
+
+
+
 static const double coeffPoly[3] = COEFF_POLY;
 
 static double lastIntegrateError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
@@ -14,13 +20,19 @@ static double poly(double Force);
  *  newStates un vector de [phi_k, theta_k]
  */
 void integrateError(double newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], double reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
-					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR][1]){
-
+					double Ts, double output[ROWS_INTEGRATOR_ERROR_VECTOR][1], double KiVal){
 	double sub[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, newStates, '-', reference, sub);
 	scalar_mult(ROWS_INTEGRATOR_ERROR_VECTOR, 1, Ts, sub);
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, lastIntegrateError, '+', sub, output);
+	if(output[0][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal){
+		output[0][0] = MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+	}
+	if(output[1][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal){
+		output[1][0] = MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+	}
 	memcpy(lastIntegrateError, output, sizeof(double)*ROWS_INTEGRATOR_ERROR_VECTOR);
+
 }
 
 void proportionalError(double newStates[ROWS_PROPORTIONAL_ERROR_VECTOR][1], double reference[ROWS_PROPORTIONAL_ERROR_VECTOR][1],

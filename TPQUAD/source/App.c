@@ -13,6 +13,7 @@
 #include "UART/UART.h"
 #include "SBUS/SBUS.h"
 #include <arm_math.h>
+#include "ControlPC/ControlPC.h"
 
 typedef struct{
 	double roll;
@@ -59,6 +60,11 @@ Gyro gyroData;
 EulerAngles AnglesIntegrated;
 tim_id_t I2CtriggerAcc;
 SBUSData_t sbus;
+FusionAhrsFlags fusionFlags;
+bool initialising = true;
+double speed[4] = {0.0, 0.0, 0.0, 0.0};
+//static int8_t megaTabla[2048];
+//static uint16_t indexMegaTabla;
 
 EulerAnglesRates lastRates;
 
@@ -98,9 +104,9 @@ void App_Init (void)
 	gpioMode(LOOP_TIME_PIN, OUTPUT);
 	gpioWrite(LOOP_TIME_PIN, LOW);
 
-	//SBUSInit(&sbus);
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
 
+	//controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
 
 }
 static void startI2CreadingCallBack(){
@@ -115,8 +121,18 @@ static void startI2C_ACCELEROMETER_CallBack(){
 }
 void App_Run (void)
 {
-
 	timerInit();
+	tim_id_t TS_timer;
+	TS_timer = timerGetId();
+
+	I2CtriggerAcc = timerGetId();
+
+	tim_id_t timerUart;
+	timerUart = timerGetId();
+
+	tim_id_t timerStationary;
+	timerStationary = timerGetId();
+
 	for(uint8_t i = 0; i < 6; i++){
 		gpioToggle(LED_1);
 		gpioToggle(LED_2);
@@ -124,7 +140,7 @@ void App_Run (void)
 		gpioToggle(LED_4);
 		gpioToggle(LED_5);
 		gpioToggle(LED_6);
-		timerDelay(TIMER_MS2TICKS(750));
+		timerDelay(TIMER_MS2TICKS(500));
 	}
 
 	gpioWrite(LED_1, HIGH); // Calibrations Start
@@ -139,19 +155,10 @@ void App_Run (void)
 //======================================================================
 //======================================================================
 
-	tim_id_t TS_timer;
-	TS_timer = timerGetId();
-
-	I2CtriggerAcc = timerGetId();
-
-	tim_id_t timerUart;
-	timerUart = timerGetId();
-
-
 	timerDelay(TIMER_MS2TICKS(100));
 	initMPU6050();
 	timerDelay(TIMER_MS2TICKS(100));
-	calibrateMPU6050();
+	calibrateMPU6050(); // takes a while 
 	//======================================================================
 	// ========================= SBUS init =================================
 	//======================================================================
@@ -160,28 +167,27 @@ void App_Run (void)
 	// =====================================================================
 	// ========================= ESC =======================================
 	// =====================================================================
-	//======================================================================
-	//======================================================================
-	//======================================================================
+
 	gpioWrite(LED_1, LOW);   // Quad Starts
 	while(gpioRead(PIN_SW2));	// Espero SW
 	while(!gpioRead(PIN_SW2));
+	gpioWrite(LED_1, HIGH); // ARM Start
 
 
 	ESCArm();
-	gpioWrite(LED_1, HIGH); // ARM Start
-	timerDelay(TIMER_MS2TICKS(5000));
-	gpioWrite(LED_1, LOW); // ARM stops
+	timerDelay(TIMER_MS2TICKS(5000)); // delay que hay que poner para que se arme cheto
 
 
-	mpu6050_readGyroData(&gyroData);
-	mpu6050_readAccelData(&accelData);
+	mpu6050_readGyroData(&gyroData);  // blocking
+	mpu6050_readAccelData(&accelData);  // blocking 
 
 	timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
+	timerStart(timerStationary, TIMER_MS2TICKS(5000), TIM_MODE_SINGLESHOT, NULL);
 
-	startI2CreadingCallBack();
-	double speed[4] = {0.0, 0.0, 0.0, 0.0};
+
+	startI2CreadingCallBack();  // lanzo la primer leida de Gyro y Accel
+	
 	while(gpioRead(PIN_SW2)){
 		gpioWrite(LOOP_TIME_PIN, HIGH);
 		mpu6050_getLastGyroRead(&gyroData);
@@ -201,33 +207,47 @@ void App_Run (void)
         EulerAnglesRates eulerRates;
         getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
 
-
+/*
         eulerRates.roll_dot = LPF_ACC_ALPHA * lastRates.roll_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.roll_dot;
         eulerRates.pitch_dot = LPF_ACC_ALPHA * lastRates.pitch_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.pitch_dot;
 		eulerRates.yaw_dot = LPF_ACC_ALPHA * lastRates.yaw_dot + (1.0f - LPF_ACC_ALPHA) * eulerRates.yaw_dot;
 
 		lastRates.roll_dot = eulerRates.roll_dot;
-
-
+*/
         // ==================================================================
-		//runControlStep(&eulerAngles, &eulerRates, speed);
-		speed[0] = 0.22;
-		speed[1] = 0.22;
-		speed[2] = 0.22;
-		speed[3] = 0.22;
-		ESCSetSpeed(speed);
-        //getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
+		if(initialising == false){     // si ya inicializo, corro el sistema de control
+			//runControlStep(&eulerAngles, &eulerRates, speed);
+			speed[0] = 0.25;
+			speed[1] = 0.25;
+			speed[2] = 0.25;
+			speed[3] = 0.25;
+			ESCSetSpeed(speed);
+	/*
+			if(timerExpired(timerStationary)){
+				gpioWrite(LED_6, HIGH);
+				if(indexMegaTabla < 2048){
+					megaTabla[indexMegaTabla] = (int8_t)eulerRates.roll_dot;
+					indexMegaTabla++;
+				}
+			}
+	*/
+			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
 
-		if(timerExpired(timerUart)){
-
-			//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
-
-			//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
-
-
-			double tmp[6] = {eulerRates.roll_dot, eulerRates.pitch_dot, eulerRates.yaw_dot}; //, pitch, roll, 180};
-			sendUartMessage3Channels(tmp);
-			timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
+			if(timerExpired(timerUart)){
+				//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
+				//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
+				//double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw}; //, pitch, roll, 180};
+				double tmp[3] = {eulerRates.roll_dot, eulerRates.pitch_dot, eulerRates.yaw_dot};
+				sendUartMessage3Channels(tmp);
+				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
+			}
+		}
+		else{
+			fusionFlags = FusionAhrsGetFlags(&ahrs);
+			if(fusionFlags.initialising == false){
+				initialising = false;
+				gpioWrite(LED_1, LOW); // Indica que ahora arrancan las propelas
+			}
 		}
 
 		gpioWrite(LOOP_TIME_PIN, LOW);
@@ -235,6 +255,7 @@ void App_Run (void)
 		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	}
 	ESCDisarm();
+
 	while(1){                                // forever blink
 		gpioToggle(LED_1);
 		timerDelay(TIMER_MS2TICKS(250));
@@ -245,16 +266,16 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
-		{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-		{0.9960235, 0.2710925, 0.0000000, 0.0000000, -0.0000000, 0.0000000},
-		{0.0000000, 0.0000000, 0.9960235, 0.2710925, 0.0000000, 0.0000000},
-		{-0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0990547, 0.1044402}
+		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000},
+		{2.3320708, 0.3983856, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+		{0.0000000, 0.0000000, 2.3320708, 0.3983856, 0.0000000, 0.0000000},
+		{0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0990547, 0.1044402}
 };
 
 double Ki[KI_ROWS][KI_COLUMNS] = {
 		{-0.0000000, -0.0000000},
-		{0.0, 0.0000000},
-		{0.0000000, 0.0},
+		{0.6285079, 0.0000000},
+		{0.0000000, 0.6285079},
 		{0.0000000, -0.0000000}
 };
 
@@ -262,7 +283,7 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}};
 	double outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	integrateError(statesIntegrator, referenceIntegrator,
-				   1e-3, outputIntError);
+				   1e-3, outputIntError, Ki[1][0]);
 
 	double outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR][1];
 	double statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {AnglesRates->roll_dot * DEG2RAD}, {Angles->pitch * DEG2RAD}, {AnglesRates->pitch_dot * DEG2RAD}, {Angles->yaw * DEG2RAD}, {AnglesRates->yaw_dot * DEG2RAD}};
@@ -275,8 +296,7 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
 	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
-	//U[0][0] = getU1fromSBUS();
-	U[0][0] = 3;
+	U[0][0] = (double)getDataFromPC();
 	U2PWM(U, U_PWM);
 }
 
@@ -339,6 +359,7 @@ static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts
 	lastAngle.pitch = newAngles->pitch;
 	lastAngle.yaw = newAngles->yaw;
 }
+
 
 static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates){
 
