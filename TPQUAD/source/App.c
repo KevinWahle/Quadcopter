@@ -66,6 +66,7 @@ bool initialising = true;
 double speed[4] = {0.0, 0.0, 0.0, 0.0};
 BiQuad filter_roll_dot_stgs[5];
 BiQuad filter_pitch_dot_stgs[5];
+BiQuad filter_yaw_dot_stgs[5];
 
 bool flagBorrable = false;
  
@@ -133,6 +134,7 @@ double a[5][3] = {
 	{
 		BiQuad_init(&filter_pitch_dot_stgs[i], b[i], a[i]);
 		BiQuad_init(&filter_roll_dot_stgs[i], b[i], a[i]);
+		BiQuad_init(&filter_yaw_dot_stgs[i], b[i], a[i]);
 	}
 	
 
@@ -242,6 +244,7 @@ void App_Run (void)
 		{
 			eulerRates.roll_dot = BiQuad_filter(&filter_roll_dot_stgs[i], eulerRates.roll_dot);
 			eulerRates.pitch_dot = BiQuad_filter(&filter_pitch_dot_stgs[i], eulerRates.pitch_dot);
+			eulerRates.yaw_dot = BiQuad_filter(&filter_yaw_dot_stgs[i], eulerRates.yaw_dot);
 		}
 		
         // ==================================================================
@@ -306,17 +309,17 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
-	{-0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-	{5.1498579, 0.5732894, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
-	{0.0000000, -0.0000000, 5.1498579, 0.5732894, -0.0000000, -0.0000000},
-	{0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.3072474, 0.3127304}
+	{0.0000000, 0.0000000, -0.0000000, 0.0000000, -0.0000000, -0.0000000},
+	{5.1498579, 0.5732894, 0.0000000, -0.0000000, 0.0000000, 0.0000000},
+	{-0.0000000, -0.0000000, 5.1498579, 0.5732894, 0.0000000, 0.0000000},
+	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.9705879, 0.3239483}
 };
 
 double Ki[KI_ROWS][KI_COLUMNS] = {
-	{0.0000000, 0.0000000},
-	{1.7164943, -0.0000000},
+	{0.0000000, -0.0000000},
+	{1.7164943, 0.0000000},
 	{-0.0000000, 1.7164943},
-	{-0.0000000, -0.0000000}
+	{0.0000000, 0.0000000}
 };
 
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]){

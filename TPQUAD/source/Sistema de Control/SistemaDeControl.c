@@ -10,8 +10,6 @@
 
 #define MAX_INTEGRAL_ERROR_NEWTON	1    // 0.2 Newton
 
-
-
 static const double coeffPoly[3] = COEFF_POLY;
 
 static double lastIntegrateError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
