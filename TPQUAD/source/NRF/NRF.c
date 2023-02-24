@@ -1,577 +1,462 @@
-/***************************************************************************//**
-  @file     NRF.c
-  @brief    Funciones para utilizacion del ESC
-  @author   Grupo 5
-  @date		9 feb. 2023
- ******************************************************************************/
-
-/*******************************************************************************
- * INCLUDE HEADER FILES
- ******************************************************************************/
-
-#include <NRF/NRF.h>
-#include "MK64F12.h"
-#include "hardware.h"
-#include "MCAL/gpio.h"
-#include "timer/timer.h"
-#include <stdlib.h>
-
-#include "MCAL/gpio.h"
-#include "hardware.h"
 #include "NRF.h"
-/*******************************************************************************
- * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
- ******************************************************************************/
+#include "timer/timer.h"
+#include <stdint.h>
+#include "SPI/SPI.h"
+#include <stdbool.h>
+
+/* Memory Map */
+#define NRF_CONFIG  0x00
+#define EN_AA       0x01
+#define EN_RXADDR   0x02
+#define SETUP_AW    0x03
+#define SETUP_RETR  0x04
+#define RF_CH       0x05
+#define RF_SETUP    0x06
+#define NRF_STATUS  0x07
+#define OBSERVE_TX  0x08
+#define CD          0x09
+#define RX_ADDR_P0  0x0A
+#define RX_ADDR_P1  0x0B
+#define RX_ADDR_P2  0x0C
+#define RX_ADDR_P3  0x0D
+#define RX_ADDR_P4  0x0E
+#define RX_ADDR_P5  0x0F
+#define TX_ADDR     0x10
+#define RX_PW_P0    0x11
+#define RX_PW_P1    0x12
+#define RX_PW_P2    0x13
+#define RX_PW_P3    0x14
+#define RX_PW_P4    0x15
+#define RX_PW_P5    0x16
+#define FIFO_STATUS 0x17
+#define DYNPD       0x1C
+#define FEATURE     0x1D
+
+/* Bit Mnemonics */
+#define MASK_RX_DR  6
+#define MASK_TX_DS  5
+#define MASK_MAX_RT 4
+#define EN_CRC      3
+#define CRCO        2
+#define PWR_UP      1
+#define PRIM_RX     0
+#define ENAA_P5     5
+#define ENAA_P4     4
+#define ENAA_P3     3
+#define ENAA_P2     2
+#define ENAA_P1     1
+#define ENAA_P0     0
+#define ERX_P5      5
+#define ERX_P4      4
+#define ERX_P3      3
+#define ERX_P2      2
+#define ERX_P1      1
+#define ERX_P0      0
+#define AW          0
+#define ARD         4
+#define ARC         0
+#define PLL_LOCK    4
+#define CONT_WAVE   7
+#define RF_DR       3
+#define RF_PWR      6
+#define RX_DR       6
+#define TX_DS       5
+#define MAX_RT      4
+#define RX_P_NO     1
+#define TX_FULL     0
+#define PLOS_CNT    4
+#define ARC_CNT     0
+#define TX_REUSE    6
+#define FIFO_FULL   5
+#define TX_EMPTY    4
+#define RX_FULL     1
+#define RX_EMPTY    0
+#define DPL_P5      5
+#define DPL_P4      4
+#define DPL_P3      3
+#define DPL_P2      2
+#define DPL_P1      1
+#define DPL_P0      0
+#define EN_DPL      2
+#define EN_ACK_PAY  1
+#define EN_DYN_ACK  0
+
+/* Instruction Mnemonics */
+#define R_REGISTER    0x00
+#define W_REGISTER    0x20
+#define REGISTER_MASK 0x1F
+#define ACTIVATE      0x50
+#define R_RX_PL_WID   0x60
+#define R_RX_PAYLOAD  0x61
+#define W_TX_PAYLOAD  0xA0
+#define W_ACK_PAYLOAD 0xA8
+#define FLUSH_TX      0xE1
+#define FLUSH_RX      0xE2
+#define REUSE_TX_PL   0xE3
+#define RF24_NOP      0xFF
+
+/* Non-P omissions */
+#define LNA_HCURR 0
+
+/* P model memory Map */
+#define RPD                 0x09
+#define W_TX_PAYLOAD_NO_ACK 0xB0
+
+/* P model bit Mnemonics */
+#define RF_DR_LOW   5
+#define RF_DR_HIGH  3
+#define RF_PWR_LOW  1
+#define RF_PWR_HIGH 2
+
+#define rf24_max(a, b) (a > b ? a : b)
+#define rf24_min(a, b) (a < b ? a : b)
+
+#define _BV(x) (1 << (x))
+
+#define RF24_POWERUP_DELAY 5000
+
+static SPI_config_t SPIconfig;
+static uint8_t finishSPI = 0;
+static bool _is_p_variant;
+static bool ack_payloads_enabled;
+static bool dynamic_payloads_enabled;
+static uint8_t payload_size;
+static uint8_t addr_width;
+static uint8_t config_reg;
+static uint8_t pipe0_reading_address[5]; /* Last address set on pipe 0 for reading. */
+static bool _is_p0_rx;                   /* For keeping track of pipe 0's usage in user-triggered RX mode. */
+
+/*Prototipos locales*/
+static void setRetries(uint8_t delay, uint8_t count);
+static void writeRegister(uint8_t reg, uint8_t value);
+static uint8_t readRegister(uint8_t reg);
+static void setDataRate(rf24_datarate_e speed);
+void callBackSPI();
+static void toggle_features(void);
+void setPayloadSize(uint8_t size);
+void setAddressWidth(uint8_t a_width);
+static void setChannel(uint8_t channel);
+static void flush_rx(void);
+static void flush_tx();
+void powerUp(void);
+
+bool RF24begin(){
+
+    SPIconfig.type=MASTER;
+    SPIconfig.PCS_inactive_state=1;
+    SPIconfig.LSB_fist=0;
+    SPIconfig.frame_size=8;
+    SPIconfig.clk_pol=0;
+    SPIconfig.clk_phase=0;
+    SPIconfig.Baud_rate_scaler=0b0011;
+
+    SPI_config(SPI_0, &SPIconfig);
 
 
-/*******************************************************************************
- * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
- ******************************************************************************/
+    timerInit();
+    timerDelay(TIMER_MS2TICKS(5));
+    
+    // Set 1500uS (minimum for 32B payload in ESB@250KBPS) timeouts, to make testing a little easier
+    // WARNING: If this is ever lowered, either 250KBS mode with AA is broken or maximum packet
+    // sizes must never be used. See datasheet for a more complete explanation.
+    setRetries(5, 15);
+    setDataRate(RF24_1MBPS);
 
-/*******************************************************************************
- * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
- ******************************************************************************/
-
-
-/*******************************************************************************
- * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
- ******************************************************************************/
-
-/*******************************************************************************
- * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
- ******************************************************************************/
-
-/*******************************************************************************
- *******************************************************************************
-                        GLOBAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
-
-/*global variables related to this file*/
-static uint8_t SPI_command;                                       /*1 byte spi command*/
-static uint8_t register_current_value;                            /*in order to change some bits of internal registers or to check their content*/
-static uint8_t register_new_value;                                /*used to write new value to nrf24l01+ registers*/
-static uint8_t write_pointer;                                     /*used as an input for read and write functions (as a pointer)*/
-static uint8_t current_address_width;                             /*current address width for receiver pipe addresses (up to 6 pipes), from 3 to 5 bytes*/
-static uint8_t reset_flag = 0;                                    /*reset flag lets the software know if the nrf24l01+ has ever been reset or not*/
-static uint8_t current_mode = DEVICE_NOT_INITIALIZED;             /*current mode of operation: DEVICE_NOT_INITIALIZED, PRX, PTX, STANDBYI, STANDBYII, POWER_DOWN*/
-static uint8_t current_payload_width;                             /*payload width could be from 1 to 32 bytes, in either dynamic or static forms*/
-static uint8_t current_acknowledgement_state = NO_ACK_MODE;       
-static uint8_t dynamic_payload = DISABLE;
-
-/*2 dimensional array of pipe addresses (5 byte address width) by default. you can change addresses using a new array later.
-  Pipe 1 address could be anything. pipe 3 to 6 addresses share the first 4 bytes with pipe 2 and only differ in byte 5*/
-uint8_t datapipe_address[MAXIMUM_NUMBER_OF_DATAPIPES][ADDRESS_WIDTH_DEFAULT] = {
-  {0X20, 0XC3, 0XC2, 0XC1, 0XA0},
-  {0X20, 0XC3, 0XC2, 0XC1, 0XA1},
-  {0X20, 0XC3, 0XC2, 0XC1, 0XA2},
-  {0X20, 0XC3, 0XC2, 0XC1, 0XA3},
-  {0X20, 0XC3, 0XC2, 0XC1, 0XA4},
-  {0X20, 0XC3, 0XC2, 0XC1, 0XA5}
-};
-
-/*function to enable or disable dynamic acknowledge. if enabled, you can disable acknowledge
-   on a specific payload with W_TX_PAYLOAD_NOACK or enable acknowledge using W_TX_PAYLOAD commands.
-   if disabled, you cannot disable acknowledging a payload. manipulates EN_DYN_ACK inside FEATURE*/
-void nrf24_dynamic_ack(uint8_t state)
-{
-  if (state == ENABLE)
-  {
-    nrf24_read(FEATURE_ADDRESS, &register_current_value, 1, CLOSE);
-    register_new_value = register_current_value | (1 << EN_DYN_ACK);
-    nrf24_write(FEATURE_ADDRESS, &register_new_value, 1, CLOSE);
-  }
-  else
-  {
-    nrf24_read(FEATURE_ADDRESS, &register_current_value, 1, CLOSE);
-    register_new_value = register_current_value & (~(1 << EN_DYN_ACK));
-    nrf24_write(FEATURE_ADDRESS, &register_new_value, 1, CLOSE);
-  }
-}
-
-/*function for PTX device to transmit 1 to 32 bytes of data, used for both dynamic payload length
-   and static payload length methods. acknowledgemet state could be NO_ACK_MODE or ACK_MODE*/
-uint8_t nrf24_transmit(uint8_t *payload, uint8_t payload_width, uint8_t acknowledgement_state)
-{
-  nrf24_read(STATUS_ADDRESS, &register_current_value, 1, CLOSE);         /*in order to check TX_FIFO status*/
-  if ((!(register_current_value & (1 << TX_FULL))) && (current_mode == PTX))
-  {
-    current_acknowledgement_state = acknowledgement_state;      /*setting the acknowledgement state to either NO_ACK or ACK, based on input*/
-    if (dynamic_payload == ENABLE)
-      payload_width = current_payload_width;
-    nrf24_send_payload(payload, payload_width);                 /*the actual function to send data*/
-    return (TRANSMIT_BEGIN);                                     /*TX FIFO is not full and nrf24l01+ mode is standby ii or ptx*/
-  }
-  else
-  {
-    return (TRANSMIT_FAIL);            /*TX FIFO full or wrong mode*/
-  }
-}
-
-/*used by nrf24_transmit function to send the actual data*/
-void nrf24_send_payload(uint8_t *payload, uint8_t payload_width)
-{
-  nrf24_SPI(SPI_ON);
-  if (current_acknowledgement_state == NO_ACK_MODE)
-    SPI_command = W_TX_PAYLOAD_NOACK;
-  else
-    SPI_command = W_TX_PAYLOAD;
-  SPI_send_command(SPI_command);
-  for (; payload_width; payload_width--)
-  {
-    SPI_command = *payload;
-    SPI_send_command(SPI_command);
-    payload++;
-  }
-  nrf24_SPI(SPI_OFF);
-}
-
-/*reports back transmit status: TRANSMIT_DONE, TRANSMIT_FAILED (in case of reaching maximum number of retransmits in auto acknowledgement mode)
-  and TRANSMIT_IN_PROGRESS, if neither flags are set. automatically resets the '1' flags.*/
-uint8_t nrf24_transmit_status()
-{
-  nrf24_read(STATUS_ADDRESS, &register_current_value, 1, CLOSE);      /*status register is read to check TX_DS flag*/
-  if (register_current_value & (1 << TX_DS))                          /*if the TX_DS == 1, */
-  {
-    nrf24_write(STATUS_ADDRESS, &register_current_value, 1, CLOSE);   /*reseting the TX_DS flag. as mentioned by datasheet, writing '1' to a flag resets that flag*/
-    return TRANSMIT_DONE;
-  }
-  else if (register_current_value & (1 << MAX_RT))
-  {
-    nrf24_write(STATUS_ADDRESS, &register_current_value, 1, CLOSE);   /*reseting the MAX_RT flag. as mentioned by datasheet, writing '1' to a flag resets that flag*/
-    return TRANSMIT_FAILED;
-  }
-  else
-    return TRANSMIT_IN_PROGRESS;
-}
-
-/*the receive function output is used as a polling method to check the received data inside RX FIFOs. 
-If there is any data available, it will be loaded inside payload array*/
-uint8_t nrf24_receive(uint8_t *payload, uint8_t payload_width)
-{
-  if (current_mode == PRX)
-  {
-    nrf24_read(STATUS_ADDRESS, &register_current_value, 1, CLOSE);
-    if (register_current_value & (1 << RX_DR))                         /*if received data is ready inside RX FIFO*/
-    {
-      if(dynamic_payload == DISABLE)                                    /*if dynamic payload width is disabled, use the static payload width and ignore the input*/
-        payload_width = current_payload_width;
-        
-      nrf24_SPI(SPI_ON);                                                /*sending the read payload command to nrf24l01+*/                          
-      SPI_command = R_RX_PAYLOAD;
-      SPI_send_command(SPI_command);
-       
-      for (; payload_width; payload_width--)
-      {
-        SPI_command = NOP_CMD;
-        *payload = SPI_send_command(SPI_command);
-        payload++;
-      }
-      nrf24_SPI(SPI_OFF); 
-      nrf24_read(FIFO_STATUS_ADDRESS, &register_current_value, 1, CLOSE);   /*in order to check the RX_EMPTY flag*/
-      if(register_current_value & (1 << RX_EMPTY))                        /*if the RX FIFO is empty, reset the RX_DR flag inside STATUS register*/
-      {
-        nrf24_read(STATUS_ADDRESS, &register_current_value, 1, CLOSE);
-        register_new_value = register_current_value | (1 << RX_DR);
-        nrf24_write(STATUS_ADDRESS, &register_new_value, 1, CLOSE); 
-      }      
-      return OPERATION_DONE;
+    // detect if is a plus variant & use old toggle features command accordingly
+    uint8_t before_toggle = read_register(FEATURE);
+    toggle_features();
+    uint8_t after_toggle = read_register(FEATURE);
+    _is_p_variant = before_toggle == after_toggle;
+    if (after_toggle) {
+        if (_is_p_variant) {
+            // module did not experience power-on-reset (#401)
+            toggle_features();
+        }
+        // allow use of multicast parameter and dynamic payloads by default
+        writeRegister(FEATURE, 0);
     }
-    else
-    {
-      return RECEIVE_FIFO_EMPTY;
+    ack_payloads_enabled = false; // ack payloads disabled by default
+    writeRegister(DYNPD, 0);     // disable dynamic payloads by default (for all pipes)
+    dynamic_payloads_enabled = false;
+    writeRegister(EN_AA, 0x3F);  // enable auto-ack on all pipes
+    writeRegister(EN_RXADDR, 3); // only open RX pipes 0 & 1
+    setPayloadSize(32);           // set static payload size to 32 (max) bytes by default
+    setAddressWidth(5);           // set default address length to (max) 5 bytes
+
+    // Set up default configuration.  Callers can always change it later.
+    // This channel should be universally safe and not bleed over into adjacent
+    // spectrum.
+    setChannel(76);
+
+    // Reset current status
+    // Notice reset and flush is the last thing we do
+    write_register(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
+
+    // Flush buffers
+    flush_rx();
+    flush_tx();
+
+    // Clear CONFIG register:
+    //      Reflect all IRQ events on IRQ pin
+    //      Enable PTX
+    //      Power Up
+    //      16-bit CRC (CRC required by auto-ack)
+    // Do not write CE high so radio will remain in standby I mode
+    // PTX should use only 22uA of power
+    write_register(NRF_CONFIG, (_BV(EN_CRC) | _BV(CRCO)));
+    config_reg = read_register(NRF_CONFIG);
+    powerUp();
+    return config_reg == (_BV(EN_CRC) | _BV(CRCO) | _BV(PWR_UP)) ? true : false;
+}
+
+static void setRetries(uint8_t delay, uint8_t count){
+    writeRegister(SETUP_RETR, rf24_min(15, delay) << ARD | rf24_min(15, count));
+}
+
+static void writeRegister(uint8_t reg, uint8_t value){
+    package pkg[2];
+	pkg[0].msg = W_REGISTER | reg;
+	pkg[0].pSave = NULL;
+	pkg[0].cb = NULL;
+	pkg[0].read = 0;
+	pkg[0].cs_end = 0;
+
+	pkg[1].msg = value;
+	pkg[1].pSave = NULL;
+	pkg[1].cb = NULL;
+	pkg[1].read = 0;
+	pkg[1].cs_end = 1;
+
+    finishSPI = 0;
+    SPISend(SPI_0, pkg, 2, 0);
+    while(!finishSPI);
+}
+
+static uint8_t readRegister(uint8_t reg){
+    package pkg[2];
+    uint8_t readValue;
+	pkg[0].msg = R_REGISTER | reg;
+	pkg[0].pSave = NULL;
+	pkg[0].cb = NULL;
+	pkg[0].read = 0;
+	pkg[0].cs_end = 0;
+
+	pkg[1].msg = 0xff;
+	pkg[1].pSave = &readValue;
+	pkg[1].cb = callBackSPI;
+	pkg[1].read = 1;
+	pkg[1].cs_end = 1;
+
+    finishSPI = 0;
+    SPISend(SPI_0, pkg, 2, 0);
+    while(!finishSPI);
+}
+
+static void setDataRate(rf24_datarate_e speed){
+    uint8_t setup = read_register(RF_SETUP);
+
+    // HIGH and LOW '00' is 1Mbs - our default      
+    setup = setup & ~(_BV(RF_DR_HIGH) | _BV(RF_DR_HIGH));  // HARDCODEADO FUERZO EL 1MBps
+
+    write_register(RF_SETUP, setup);
+}
+
+void callBackSPI(){
+    finishSPI = 1;
+}
+
+static void toggle_features(void)
+{
+    package pkg[2];
+	pkg[0].msg = ACTIVATE;
+	pkg[0].pSave = NULL;
+	pkg[0].cb = NULL;
+	pkg[0].read = 0;
+	pkg[0].cs_end = 0;
+
+	pkg[1].msg = 0x73;
+	pkg[1].pSave = NULL;
+	pkg[1].cb = callBackSPI;
+	pkg[1].read = 0;
+	pkg[1].cs_end = 1;
+
+    finishSPI = 0;
+    SPISend(SPI_0, pkg, 2, 0);
+    while(!finishSPI);
+}
+void setPayloadSize(uint8_t size)
+{
+    // payload size must be in range [1, 32]
+    payload_size = rf24_max(1, rf24_min(32, size));
+
+    // write static payload size setting for all pipes
+    for (uint8_t i = 0; i < 6; ++i) {
+        write_register(RX_PW_P0 + i, payload_size);
     }
-  }
-  else
-    return OPERATION_ERROR;
 }
 
-/*function which uses TX_FLUSH or RX_FLUSH command to flush the fifo buffers. if successful, output is OPERATION_DONE.
-   if not successful (wrong input or wrong mode of operation) output will be OPERATION_ERROR*/
-uint8_t nrf24_flush(uint8_t fifo_select)
+void setAddressWidth(uint8_t a_width)
 {
-  switch (fifo_select)
-  {
-    case TX_BUFFER:
-      if (current_mode == PTX)
-      {
-        nrf24_SPI(SPI_ON);
-        SPI_command = FLUSH_TX;
-        SPI_send_command(SPI_command);
-        nrf24_SPI(SPI_OFF);
-        return OPERATION_DONE;
-      }
-      else
-        return OPERATION_ERROR;
-    case RX_BUFFER:
-      if (current_mode == PRX)
-      {
-        nrf24_SPI(SPI_ON);
-        SPI_command = FLUSH_RX;
-        SPI_send_command(SPI_command);
-        nrf24_SPI(SPI_OFF);
-        return OPERATION_DONE;
-      }
-      else
-        return OPERATION_ERROR;
-    default:
-      return OPERATION_ERROR;
-  }
+    a_width = a_width - 2;
+    if (a_width) {
+        write_register(SETUP_AW, a_width % 4);
+        addr_width = (a_width % 4) + 2;
+    }
+    else {
+        write_register(SETUP_AW, 0);
+        addr_width = 2;
+    }
 }
 
-/*must be called atleast once, which happens with calling nrf24_device function*/
-void nrf24_reset()
+static void setChannel(uint8_t channel)
 {
-  reset_flag = 1;
-  nrf24_CE(CE_OFF);
-  register_new_value = CONFIG_REGISTER_DEFAULT;
-  nrf24_write(CONFIG_ADDRESS, &register_new_value, 1, CLOSE);
-  register_new_value = EN_AA_REGISTER_DEFAULT;
-  nrf24_write(EN_AA_ADDRESS, &register_new_value, 1, CLOSE);
-  register_new_value = EN_RXADDR_REGISTER_DEFAULT;
-  nrf24_write(EN_RXADDR_ADDRESS, &register_new_value, 1, CLOSE);
-  register_new_value = SETUP_AW_REGISTER_DEFAULT;
-  nrf24_write(SETUP_AW_ADDRESS, &register_new_value, 1, CLOSE);
-  register_new_value = RF_CH_REGISTER_DEFAULT;
-  nrf24_write(RF_CH_ADDRESS, &register_new_value, 1, CLOSE);
-  register_new_value = RF_SETUP_REGISTER_DEFAULT;
-  nrf24_write(RF_SETUP_ADDRESS, &register_new_value, 1, CLOSE);
-  register_new_value = STATUS_REGISTER_DEFAULT;
-  nrf24_write(STATUS_ADDRESS, &register_new_value, 1, CLOSE);
-
-  nrf24_mode(PTX);
-  nrf24_flush(TX_BUFFER);
-  nrf24_mode(PRX);
-  nrf24_flush(RX_BUFFER);
-
-  nrf24_read(STATUS_ADDRESS, &register_current_value, 1, CLOSE);
-  register_new_value = register_current_value | (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT);
-  nrf24_write(STATUS_ADDRESS, &register_new_value, 1, CLOSE);
-  
-  nrf24_interrupt_mask(ENABLE, ENABLE, ENABLE);
-  nrf24_crc_configuration(ENABLE, 1);
-  nrf24_address_width(ADDRESS_WIDTH_DEFAULT);
-  nrf24_rf_datarate(RF_DATARATE_DEFAULT);
-  nrf24_rf_power(RF_PWR_DEFAULT);
-  nrf24_rf_channel(RF_CHANNEL_DEFAULT);
-  nrf24_datapipe_enable(NUMBER_OF_DP_DEFAULT);
-  /*nrf24_datapipe_address_configuration();*/
-  /*nrf24_datapipe_ptx(1);*/
-  nrf24_prx_static_payload_width(STATIC_PAYLOAD_WIDTH_DEFAULT, NUMBER_OF_DP_DEFAULT);
-  nrf24_automatic_retransmit_setup(RETRANSMIT_DELAY_DEFAULT, RETRANSMIT_COUNT_DEFAULT);
-  nrf24_auto_acknowledgment_setup(NUMBER_OF_DP_DEFAULT);
-  nrf24_dynamic_payload(DISABLE, NUMBER_OF_DP_DEFAULT);
-  nrf24_dynamic_ack(ENABLE);
+    const uint8_t max_channel = 125;
+    write_register(RF_CH, rf24_min(channel, max_channel));
 }
 
-/*used by firmware to set the nrf24 mode in TRANSMITTER, RECEIVER, POWER_SAVING or TURN_OFF states, and reseting the device
-  if it has not been done yet. This is the initializer, and everything starts by calling nrf24_device first.It has a higher
-  level of abstraction than nrf24_mode and must be used by user*/
-void nrf24_device(uint8_t device_mode, uint8_t reset_state)
+static void flush_rx(void)
 {
-  SPI_Initializer();
-  pinout_Initializer();
-  delay_function(STARTUP_DELAY);
-
-  if ((reset_state == RESET) || (reset_flag == 0))
-  {
-    nrf24_reset();
-  }
-
-  switch (device_mode)
-  {
-    case TRANSMITTER:
-      nrf24_mode(POWER_DOWN);
-      nrf24_interrupt_mask(ENABLE, DISABLE, DISABLE);                /*disabling tx interrupt mask*/
-      nrf24_mode(PTX);
-      break;
-    case RECEIVER:
-      nrf24_mode(POWER_DOWN);
-      nrf24_interrupt_mask(DISABLE, ENABLE, ENABLE);                /*disabling rx interrupt mask*/
-      nrf24_mode(PRX);
-      delay_function(PRX_MODE_DELAY);                              /*100ms for PRX mode*/
-      break;
-    case POWER_SAVING:
-      nrf24_mode(POWER_DOWN);
-      nrf24_interrupt_mask(ENABLE, ENABLE, ENABLE);
-      nrf24_mode(STANDBYI);
-      break;
-    case TURN_OFF:
-      nrf24_mode(POWER_DOWN);
-      nrf24_interrupt_mask(ENABLE, ENABLE, ENABLE);
-      break;
-    default:
-      nrf24_mode(POWER_DOWN);
-      nrf24_interrupt_mask(ENABLE, ENABLE, ENABLE);
-      break;
-  }
+    write_register(FLUSH_RX, RF24_NOP, true);
 }
 
-/*setting automatic retransmit delay time and maximum number of retransmits*/
-void nrf24_automatic_retransmit_setup(uint16_t delay_time, uint8_t retransmit_count)
-{
-  register_new_value = 0x00;
-  for (; (delay_time > 250) && (register_new_value < 0X0F); delay_time -= 250)
-    register_new_value++;
-  register_new_value <<= ARD_0;
-  if ((retransmit_count > 0) && (retransmit_count < 16))
-    register_new_value |= retransmit_count;
-  else
-    register_new_value |= 0;
-  nrf24_write(SETUP_RETR_ADDRESS, &register_new_value, 1, CLOSE);
+static void flush_tx(){
+    rite_register(FLUSH_TX, RF24_NOP, true);
 }
 
-/*setting auto acknoledgement on datapipes*/
-void nrf24_auto_acknowledgment_setup(uint8_t datapipe)
+void powerUp(void)
 {
-  if (datapipe < 7)
-    register_new_value = (1 << datapipe) - 1;
-  nrf24_write(EN_AA_ADDRESS, &register_new_value, 1, CLOSE);
+    // if not powered up then power up and wait for the radio to initialize
+    if (!(config_reg & _BV(PWR_UP))) {
+        config_reg |= _BV(PWR_UP);
+        write_register(NRF_CONFIG, config_reg);
+
+        // For nRF24L01+ to go from power down mode to TX or RX mode it must first pass through stand-by mode.
+        // There must be a delay of Tpd2stby (see Table 16.) after the nRF24L01+ leaves power down mode before
+        // the CEis set high. - Tpd2stby can be up to 5ms per the 1.0 datasheet
+        timerDelay(TIMER_US2TICKS(RF24_POWERUP_DELAY));
+    }
 }
 
-/*turns on or off the dynamic payload width capability*/
-void nrf24_dynamic_payload(uint8_t state, uint8_t datapipe)
+static void openReadingPipe(uint8_t child, uint64_t address)
 {
-  nrf24_auto_acknowledgment_setup(datapipe);                        /*setting auto acknowledgment before setting dynamic payload*/
-  nrf24_read(FEATURE_ADDRESS, &register_current_value, 1, CLOSE);
-  if (state == ENABLE)
-  {
-    register_new_value = register_current_value | (1 << EN_DPL);    /*EN_DPL bit turns dynamic payload width on or off on all datapipes*/
-    nrf24_write(FEATURE_ADDRESS, &register_new_value, 1, CLOSE);
-    if (datapipe < 7)
-      register_new_value = (1 << datapipe) - 1;                       /*turning on dynamic payload width on chosen datapipes, using DYNPD register*/
-    nrf24_write(DYNPD_ADDRESS, &register_new_value, 1, CLOSE);
-    dynamic_payload = ENABLE;
-  }
-  else
-  {
-    register_new_value = register_current_value & (~(1 << EN_DPL));
-    nrf24_write(FEATURE_ADDRESS, &register_new_value, 1, CLOSE);
-    dynamic_payload = DISABLE;
-  }
+    // If this is pipe 0, cache the address.  This is needed because
+    // openWritingPipe() will overwrite the pipe 0 address, so
+    // startListening() will have to restore it.
+    if (child == 0) {
+        memcpy(pipe0_reading_address, &address, addr_width);
+        _is_p0_rx = true;
+    }
+/*
+    if (child <= 5) {
+        // For pipes 2-5, only write the LSB
+        if (child < 2) {
+            write_register(pgm_read_byte(&child_pipe[child]), reinterpret_cast<const uint8_t*>(&address), addr_width);
+        }
+        else {
+            write_register(pgm_read_byte(&child_pipe[child]), reinterpret_cast<const uint8_t*>(&address), 1);
+        }
+
+        // Note it would be more efficient to set all of the bits for all open
+        // pipes at once.  However, I thought it would make the calling code
+        // more simple to do it this way.
+        write_register(EN_RXADDR, static_cast<uint8_t>(read_register(EN_RXADDR) | _BV(pgm_read_byte(&child_pipe_enable[child]))));
+    }
+*/
+}
+static void setPALevel(uint8_t level)
+{
+    bool lnaEnable = 1;
+    uint8_t setup = readRegister(RF_SETUP) & (0xF8);
+    setup |= _pa_level_reg_value(level, lnaEnable);
+    write_register(RF_SETUP, setup);
 }
 
-/*on nrf24l01+ there is only one address for PTX device which must be the same as PRX data pipe address 0*/
-void nrf24_datapipe_ptx(uint8_t datapipe_number)
+static uint8_t _pa_level_reg_value(uint8_t level, bool lnaEnable)
 {
-  nrf24_write(TX_ADDR_ADDRESS, &datapipe_address[datapipe_number - 1][0], current_address_width, CLOSE);
+    // If invalid level, go to max PA
+    // Else set level as requested
+    // + lnaEnable (1 or 0) to support the SI24R1 chip extra bit
+    return (((level > RF24_PA_MAX ? (uint8_t)(RF24_PA_MAX) : level) << 1) + lnaEnable);
 }
 
-/*setting the 6 datapipe addresses using the datapipe_address[][]*/
-void nrf24_datapipe_address_configuration()
+void startListening(void)
 {
-  uint8_t address = RX_ADDR_P0_ADDRESS;
-  for (uint8_t counter = 0; counter < 6; counter++)
-  {
-    nrf24_write(address, &datapipe_address[counter][0], current_address_width, CLOSE);
-    address++;
-  }
+    config_reg |= _BV(PRIM_RX);
+    write_register(NRF_CONFIG, config_reg);
+    write_register(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
+    ce(HIGH);
+
+    // Restore the pipe0 address, if exists
+    if (_is_p0_rx) {
+        writeSeveralRegisters(RX_ADDR_P0, pipe0_reading_address, addr_width);
+    }
+    else {
+       // closeReadingPipe(0);
+    }
 }
 
-/*function to change static payload width, from 1 to 32 bytes in each payload*/
-void nrf24_prx_static_payload_width(uint8_t static_payload_width, uint8_t number_of_datapipes)
+void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len)
 {
-  for (uint8_t address = RX_PW_P0_ADDRESS; number_of_datapipes; number_of_datapipes--)
-  {
-    nrf24_write(address, &static_payload_width, 1, CLOSE);
-    address++;
-  }
-  current_payload_width = static_payload_width;
+    package pkg [10];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
+	pkg[0].msg = W_REGISTER | reg;
+	pkg[0].pSave = NULL;
+	pkg[0].cb = NULL;
+	pkg[0].read = 0;
+	pkg[0].cs_end = 0;
+
+    for(uint8_t i = 1; i <= len; i++){
+        pkg[i].msg = *buf++;
+        pkg[i].pSave = NULL;
+        pkg[i].cb = NULL;
+        pkg[i].read = 0;
+        pkg[i].cs_end = i == len ? 1 : 0;
+    }
+
+    finishSPI = 0;
+    SPISend(SPI_0, pkg, len + 1, 0);
+    while(!finishSPI);
 }
 
-/*datapipes are turned on and off using EN_RXADDR register, PRX datapipe addresses are located in RX_ADDR_Pn, TX address is located inside TX_ADDR*/
-void nrf24_datapipe_enable(uint8_t number_of_datapipes)
+bool available()
 {
-  register_new_value = (1 << number_of_datapipes) - 1;
-  nrf24_write(EN_RXADDR_ADDRESS, &register_new_value, 1, CLOSE);
+    // get implied RX FIFO empty flag from status byte
+    uint8_t pipe = (get_status() >> RX_P_NO) & 0x07;
+    if (pipe > 5)
+        return 0;
+
+    return 1;
+}
+static uint8_t get_status(){
+    return readRegister(R_REGISTER | NRF_STATUS);
 }
 
-/*function to set the nrf24l01+ address width, from 3 to 5 bytes*/
-void nrf24_address_width(uint8_t address_width)
+void read(void* buf, uint8_t len)
 {
-  if ((address_width <= 5) && (address_width >= 3))
-  {
-    write_pointer = address_width - 2;
-  }
-  else
-  {
-    write_pointer = 3;
-  }
-  nrf24_write(SETUP_AW_ADDRESS, &write_pointer, 1, CLOSE);                    /*5 bytes is the maximum address width available*/
-  current_address_width = address_width;
+    // Fetch the payload
+    read_payload(buf, len);
+
+    //Clear the only applicable interrupt flags
+    writeRegister(NRF_STATUS, _BV(RX_DR));
 }
 
-/*datarate settings, you can choose between 2mbps, 1mbps, 250kbps*/
-void nrf24_rf_datarate(uint8_t rf_datarate)
-{
-  nrf24_read(RF_SETUP_ADDRESS, &register_current_value, 1, CLOSE);
-  register_current_value &= ~((1 << RF_DR_LOW) | (1 << RF_DR_HIGH));
-  switch (rf_datarate)
-  {
-    case 2000:
-      register_new_value = register_current_value | (1 << RF_DR_HIGH);
-      break;
-    case 1000:
-      register_new_value = register_current_value;
-      break;
-    case 250:
-      register_new_value = register_current_value | (1 << RF_DR_LOW);
-      break;
-    default:
-      register_new_value = register_current_value;
-      break;
-  }
-  nrf24_write(RF_SETUP_ADDRESS, &register_new_value, 1, CLOSE);
-}
+static void read_payLoad(uint8_t * buf, uint8_t data_len){
+    package pkg [10];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
+	pkg[0].msg = R_RX_PAYLOAD;
+	pkg[0].pSave = NULL;
+	pkg[0].cb = NULL;
+	pkg[0].read = 0;
+	pkg[0].cs_end = 0;
 
-/*nrf24l01+ RF power settings. 0dbm, -6dbm, -12dbm, -18dbm*/
-void nrf24_rf_power(uint8_t rf_power)
-{
-  nrf24_read(RF_SETUP_ADDRESS, &register_current_value, 1, CLOSE);
-  register_current_value &= ~((1 << RF_PWR_1) | (1 << RF_PWR_0));
-  switch (rf_power)
-  {
-    case 0:
-      register_new_value = register_current_value | ((1 << RF_PWR_1) | (1 << RF_PWR_0));
-      break;
-    case 6:
-      register_new_value = register_current_value | (1 << RF_PWR_1);
-      break;
-    case 12:
-      register_new_value = register_current_value | (1 << RF_PWR_0);
-      break;
-    case 18:
-      register_new_value = register_current_value;
-      break;
-    default:
-      register_new_value = register_current_value | (1 << RF_PWR_1);
-      break;
-  }
-  nrf24_write(RF_SETUP_ADDRESS, &register_new_value, 1, CLOSE);
-}
+    for(uint8_t i = 1; i <= data_len; i++){
+        pkg[i].msg = 0xff;
+        pkg[i].pSave = buf++;
+        pkg[i].cb = i == data_len ? callBackSPI : NULL;
+        pkg[i].read = 0;
+        pkg[i].cs_end = i == data_len ? 1 : 0;
+    }
 
-/*nrf24l01+ RF channel selection, from 1 to 125*/
-void nrf24_rf_channel(uint8_t rf_channel)
-{
-  if ((rf_channel <= 125) && (rf_channel >= 1))
-  {
-    uint8_t write_pointer = rf_channel;
-    nrf24_write(RF_CH_ADDRESS, &write_pointer, 1, CLOSE);
-  }
-  else
-  {
-    uint8_t write_pointer = 1;
-    nrf24_write(RF_CH_ADDRESS, &write_pointer, 1, CLOSE);
-  }
-}
+    finishSPI = 0;
+    SPISend(SPI_0, pkg, data_len + 1, 0);
+    while(!finishSPI);
 
-/*interrupt mask settings. 3 seperate masks for RX, TX, and RT (maximum numbers of retransmission reached*/
-void nrf24_interrupt_mask(uint8_t rx_mask, uint8_t tx_mask, uint8_t max_rt_mask)
-{
-  nrf24_read(CONFIG_ADDRESS, &register_current_value, 1, CLOSE);
-  if (rx_mask)
-    register_new_value = (register_current_value) | (1 << MASK_RX_DR);
-  else
-    register_new_value &= (~(1 << MASK_RX_DR));
-  if (tx_mask)
-    register_new_value |= (1 << MASK_TX_DS);
-  else
-    register_new_value &= (~(1 << MASK_TX_DS));
-  if (max_rt_mask)
-    register_new_value |= (1 << MASK_MAX_RT);
-  else
-    register_new_value &= (~(1 << MASK_MAX_RT));
-
-  nrf24_write(CONFIG_ADDRESS, &register_new_value, 1, CLOSE);
-}
-
-/*enabling or disabling crc in payload; setting crc encoding scheme between 1 or 2 bytes*/
-void nrf24_crc_configuration(uint8_t crc_enable, uint8_t crc_encoding_scheme)
-{
-  nrf24_read(CONFIG_ADDRESS, &register_current_value, 1, CLOSE);
-  if (crc_enable)
-    register_new_value = (register_current_value) | (1 << EN_CRC);
-  else
-    register_new_value &= (~(1 << EN_CRC));
-  if (crc_encoding_scheme == 2)
-    register_new_value |= (1 << CRCO);
-  else
-    register_new_value &= (~(1 << CRCO));
-
-  nrf24_write(CONFIG_ADDRESS, &register_new_value, 1, CLOSE);
-}
-
-/*mode selector: power down, standby i, standby ii, ptx, prx. used by nrf24_device function*/
-void nrf24_mode(uint8_t mode)
-{
-  nrf24_read(CONFIG_ADDRESS, &register_current_value, 1, CLOSE);
-  switch (mode)
-  {
-    case POWER_DOWN:
-      nrf24_CE(CE_OFF);
-      register_new_value = (register_current_value) & (~(1 << PWR_UP));
-      delay_function(POWER_DOWN_DELAY);
-      break;
-    case STANDBYI:                                 /*standby I is defined by 'PWR_UP = 1' and 'CE pin LOW'*/
-      nrf24_CE(CE_OFF);
-      register_new_value = (register_current_value) | (1 << PWR_UP);
-      delay_function(STANDBYI_DELAY);
-      break;
-    case STANDBYII:                                 /*standby ii is related to a ptx device*/
-      nrf24_CE(CE_ON);
-      register_new_value = ((register_current_value) | (1 << PWR_UP)) & (~(1 << PRIM_RX));
-      delay_function(STANDBYI_DELAY);
-      break;
-    case PTX:
-      nrf24_CE(CE_ON);
-      register_new_value = ((register_current_value) | (1 << PWR_UP)) & (~(1 << PRIM_RX));
-      delay_function(STANDBYI_DELAY);
-      break;
-    case PRX:
-      nrf24_CE(CE_ON);
-      register_new_value = (register_current_value) | (1 << PWR_UP) | (1 << PRIM_RX);
-      delay_function(STANDBYI_DELAY);
-      break;
-    default:
-      nrf24_CE(CE_OFF);
-      register_new_value = (register_current_value) & (~(1 << PWR_UP));
-      delay_function(POWER_DOWN_DELAY);
-      break;
-  }
-  nrf24_write(CONFIG_ADDRESS, &register_new_value, 1, CLOSE);
-  current_mode = mode;
-}
-
-/*reads the number of bytes (data_length) from the register in nrf24l01+ (address) and stores them inside an array (value),
-  then closes the spi connection (spi_state = CLOSE) or leaves it open (spi_state = OPEN)*/
-void nrf24_read(uint8_t address, uint8_t *value, uint8_t data_length, uint8_t spi_state)
-{
-  nrf24_SPI(SPI_ON);
-  SPI_command = R_REGISTER | address;    /*in order to read CONFIG, then change one bit*/
-  SPI_send_command(SPI_command);
-  SPI_command = NOP_CMD;
-  for (; data_length ; data_length--)
-  {
-    *value = SPI_send_command(SPI_command);
-    value++;
-  }
-  if (spi_state == CLOSE)
-    nrf24_SPI(SPI_OFF);
-}
-
-/*writes the number of bytes (data_length) from an array (value) inside registers in nrf24l01+ (address),
-  then closes the spi connection (spi_state = CLOSE) or leaves it open (spi_state = OPEN)*/
-void nrf24_write(uint8_t address, uint8_t *value, uint8_t data_length, uint8_t spi_state)
-{
-  nrf24_SPI(SPI_ON);
-  SPI_command = W_REGISTER | address;    /*in order to read CONFIG, then change one bit*/
-  SPI_send_command(SPI_command);
-  for (; data_length ; data_length--)
-  {
-    SPI_command = *value;
-    value++;
-    SPI_send_command(SPI_command);
-  }
-  if (spi_state == CLOSE)
-    nrf24_SPI(SPI_OFF);
 }

@@ -15,6 +15,7 @@
         "math.h": "c",
         "stdbool.h": "c",
         "biquad.h": "c",
-        "nrf.h": "c"
+        "nrf.h": "c",
+        "spi.h": "c"
     }
 }
