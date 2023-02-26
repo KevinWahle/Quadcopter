@@ -17,7 +17,6 @@ SUBDIRS := \
 SDK/CMSIS \
 SDK/startup \
 source/ADC \
-source \
 source/Biquad \
 source/CAN \
 source/CMP \
@@ -27,6 +26,7 @@ source/FTM \
 source/Fusion \
 source/I2Cm \
 source/MCAL \
+source/NRF \
 source/PIT \
 source/SPI \
 source/Sensores \

@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include "SPI/SPI.h"
 #include <stdbool.h>
+#include "MCAL/gpio.h"
+#include <string.h>
+
+#define CE          PORTNUM2PIN(PB, 2)
 
 /* Memory Map */
 #define NRF_CONFIG  0x00
@@ -116,7 +120,7 @@
 #define RF24_POWERUP_DELAY 5000
 
 static SPI_config_t SPIconfig;
-static uint8_t finishSPI = 0;
+volatile static uint8_t finishSPI = 0;
 static bool _is_p_variant;
 static bool ack_payloads_enabled;
 static bool dynamic_payloads_enabled;
@@ -125,22 +129,38 @@ static uint8_t addr_width;
 static uint8_t config_reg;
 static uint8_t pipe0_reading_address[5]; /* Last address set on pipe 0 for reading. */
 static bool _is_p0_rx;                   /* For keeping track of pipe 0's usage in user-triggered RX mode. */
+static uint8_t status = 1;
+
+static uint8_t child_pipe[] = {RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2,
+                                             RX_ADDR_P3, RX_ADDR_P4, RX_ADDR_P5};
+
+static uint8_t child_pipe_enable[] = {ERX_P0, ERX_P1, ERX_P2,
+                                                    ERX_P3, ERX_P4, ERX_P5};
+
 
 /*Prototipos locales*/
 static void setRetries(uint8_t delay, uint8_t count);
 static void writeRegister(uint8_t reg, uint8_t value);
 static uint8_t readRegister(uint8_t reg);
 static void setDataRate(rf24_datarate_e speed);
-void callBackSPI();
+static void callBackSPI();
 static void toggle_features(void);
-void setPayloadSize(uint8_t size);
-void setAddressWidth(uint8_t a_width);
+static void setPayloadSize(uint8_t size);
+static void setAddressWidth(uint8_t a_width);
 static void setChannel(uint8_t channel);
 static void flush_rx(void);
 static void flush_tx();
-void powerUp(void);
+static void powerUp(void);
+void setPALevel(uint8_t level);
+static uint8_t _pa_level_reg_value(uint8_t level, bool lnaEnable);
+static void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len);
+static uint8_t get_status();
+static void read_payLoad(uint8_t * buf, uint8_t data_len);
 
 bool RF24begin(){
+
+    gpioMode(CE, OUTPUT);
+    gpioWrite(CE, LOW);
 
     SPIconfig.type=MASTER;
     SPIconfig.PCS_inactive_state=1;
@@ -152,7 +172,6 @@ bool RF24begin(){
 
     SPI_config(SPI_0, &SPIconfig);
 
-
     timerInit();
     timerDelay(TIMER_MS2TICKS(5));
     
@@ -163,9 +182,9 @@ bool RF24begin(){
     setDataRate(RF24_1MBPS);
 
     // detect if is a plus variant & use old toggle features command accordingly
-    uint8_t before_toggle = read_register(FEATURE);
+    uint8_t before_toggle = readRegister(FEATURE);
     toggle_features();
-    uint8_t after_toggle = read_register(FEATURE);
+    uint8_t after_toggle = readRegister(FEATURE);
     _is_p_variant = before_toggle == after_toggle;
     if (after_toggle) {
         if (_is_p_variant) {
@@ -190,7 +209,7 @@ bool RF24begin(){
 
     // Reset current status
     // Notice reset and flush is the last thing we do
-    write_register(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
+    writeRegister(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
 
     // Flush buffers
     flush_rx();
@@ -203,8 +222,8 @@ bool RF24begin(){
     //      16-bit CRC (CRC required by auto-ack)
     // Do not write CE high so radio will remain in standby I mode
     // PTX should use only 22uA of power
-    write_register(NRF_CONFIG, (_BV(EN_CRC) | _BV(CRCO)));
-    config_reg = read_register(NRF_CONFIG);
+    writeRegister(NRF_CONFIG, (_BV(EN_CRC) | _BV(CRCO)));
+    config_reg = readRegister(NRF_CONFIG);
     powerUp();
     return config_reg == (_BV(EN_CRC) | _BV(CRCO) | _BV(PWR_UP)) ? true : false;
 }
@@ -216,14 +235,14 @@ static void setRetries(uint8_t delay, uint8_t count){
 static void writeRegister(uint8_t reg, uint8_t value){
     package pkg[2];
 	pkg[0].msg = W_REGISTER | reg;
-	pkg[0].pSave = NULL;
+	pkg[0].pSave = &status;
 	pkg[0].cb = NULL;
-	pkg[0].read = 0;
+	pkg[0].read = 1;
 	pkg[0].cs_end = 0;
 
 	pkg[1].msg = value;
 	pkg[1].pSave = NULL;
-	pkg[1].cb = NULL;
+	pkg[1].cb = callBackSPI;
 	pkg[1].read = 0;
 	pkg[1].cs_end = 1;
 
@@ -236,9 +255,9 @@ static uint8_t readRegister(uint8_t reg){
     package pkg[2];
     uint8_t readValue;
 	pkg[0].msg = R_REGISTER | reg;
-	pkg[0].pSave = NULL;
+	pkg[0].pSave = &status;
 	pkg[0].cb = NULL;
-	pkg[0].read = 0;
+	pkg[0].read = 1;
 	pkg[0].cs_end = 0;
 
 	pkg[1].msg = 0xff;
@@ -250,18 +269,19 @@ static uint8_t readRegister(uint8_t reg){
     finishSPI = 0;
     SPISend(SPI_0, pkg, 2, 0);
     while(!finishSPI);
+    return readValue;
 }
 
 static void setDataRate(rf24_datarate_e speed){
-    uint8_t setup = read_register(RF_SETUP);
+    uint8_t setup = readRegister(RF_SETUP);
 
     // HIGH and LOW '00' is 1Mbs - our default      
-    setup = setup & ~(_BV(RF_DR_HIGH) | _BV(RF_DR_HIGH));  // HARDCODEADO FUERZO EL 1MBps
+    setup = setup & ~(_BV(RF_DR_LOW) | _BV(RF_DR_HIGH));  // HARDCODEADO FUERZO EL 1MBps
 
-    write_register(RF_SETUP, setup);
+    writeRegister(RF_SETUP, setup);
 }
 
-void callBackSPI(){
+static void callBackSPI(){
     finishSPI = 1;
 }
 
@@ -284,26 +304,26 @@ static void toggle_features(void)
     SPISend(SPI_0, pkg, 2, 0);
     while(!finishSPI);
 }
-void setPayloadSize(uint8_t size)
+static void setPayloadSize(uint8_t size)
 {
     // payload size must be in range [1, 32]
     payload_size = rf24_max(1, rf24_min(32, size));
 
     // write static payload size setting for all pipes
     for (uint8_t i = 0; i < 6; ++i) {
-        write_register(RX_PW_P0 + i, payload_size);
+        writeRegister(RX_PW_P0 + i, payload_size);
     }
 }
 
-void setAddressWidth(uint8_t a_width)
+static void setAddressWidth(uint8_t a_width)
 {
     a_width = a_width - 2;
     if (a_width) {
-        write_register(SETUP_AW, a_width % 4);
+        writeRegister(SETUP_AW, a_width % 4);
         addr_width = (a_width % 4) + 2;
     }
     else {
-        write_register(SETUP_AW, 0);
+        writeRegister(SETUP_AW, 0);
         addr_width = 2;
     }
 }
@@ -311,24 +331,24 @@ void setAddressWidth(uint8_t a_width)
 static void setChannel(uint8_t channel)
 {
     const uint8_t max_channel = 125;
-    write_register(RF_CH, rf24_min(channel, max_channel));
+    writeRegister(RF_CH, rf24_min(channel, max_channel));
 }
 
 static void flush_rx(void)
 {
-    write_register(FLUSH_RX, RF24_NOP, true);
+    writeRegister(FLUSH_RX, RF24_NOP);
 }
 
 static void flush_tx(){
-    rite_register(FLUSH_TX, RF24_NOP, true);
+    writeRegister(FLUSH_TX, RF24_NOP);
 }
 
-void powerUp(void)
+static void powerUp(void)
 {
     // if not powered up then power up and wait for the radio to initialize
     if (!(config_reg & _BV(PWR_UP))) {
         config_reg |= _BV(PWR_UP);
-        write_register(NRF_CONFIG, config_reg);
+        writeRegister(NRF_CONFIG, config_reg);
 
         // For nRF24L01+ to go from power down mode to TX or RX mode it must first pass through stand-by mode.
         // There must be a delay of Tpd2stby (see Table 16.) after the nRF24L01+ leaves power down mode before
@@ -337,38 +357,38 @@ void powerUp(void)
     }
 }
 
-static void openReadingPipe(uint8_t child, uint64_t address)
+void openReadingPipe(uint8_t child, uint8_t* address)
 {
     // If this is pipe 0, cache the address.  This is needed because
     // openWritingPipe() will overwrite the pipe 0 address, so
     // startListening() will have to restore it.
     if (child == 0) {
-        memcpy(pipe0_reading_address, &address, addr_width);
+        memcpy(pipe0_reading_address, address, addr_width);
         _is_p0_rx = true;
     }
-/*
+
     if (child <= 5) {
         // For pipes 2-5, only write the LSB
         if (child < 2) {
-            write_register(pgm_read_byte(&child_pipe[child]), reinterpret_cast<const uint8_t*>(&address), addr_width);
+            writeSeveralRegisters(child_pipe[child], address, addr_width);
         }
         else {
-            write_register(pgm_read_byte(&child_pipe[child]), reinterpret_cast<const uint8_t*>(&address), 1);
+           writeSeveralRegisters(child_pipe[child], address, 1);
         }
 
         // Note it would be more efficient to set all of the bits for all open
         // pipes at once.  However, I thought it would make the calling code
         // more simple to do it this way.
-        write_register(EN_RXADDR, static_cast<uint8_t>(read_register(EN_RXADDR) | _BV(pgm_read_byte(&child_pipe_enable[child]))));
+        writeRegister(EN_RXADDR, readRegister(EN_RXADDR) | _BV(child_pipe_enable[child]) );
     }
-*/
+
 }
-static void setPALevel(uint8_t level)
+void setPALevel(uint8_t level)
 {
     bool lnaEnable = 1;
     uint8_t setup = readRegister(RF_SETUP) & (0xF8);
     setup |= _pa_level_reg_value(level, lnaEnable);
-    write_register(RF_SETUP, setup);
+    writeRegister(RF_SETUP, setup);
 }
 
 static uint8_t _pa_level_reg_value(uint8_t level, bool lnaEnable)
@@ -382,10 +402,10 @@ static uint8_t _pa_level_reg_value(uint8_t level, bool lnaEnable)
 void startListening(void)
 {
     config_reg |= _BV(PRIM_RX);
-    write_register(NRF_CONFIG, config_reg);
-    write_register(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
-    ce(HIGH);
-
+    writeRegister(NRF_CONFIG, config_reg);
+    writeRegister(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
+    //ce(HIGH);
+    gpioWrite(CE, HIGH);
     // Restore the pipe0 address, if exists
     if (_is_p0_rx) {
         writeSeveralRegisters(RX_ADDR_P0, pipe0_reading_address, addr_width);
@@ -395,9 +415,9 @@ void startListening(void)
     }
 }
 
-void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len)
+static void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len)
 {
-    package pkg [10];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
+    package pkg [13];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
 	pkg[0].msg = W_REGISTER | reg;
 	pkg[0].pSave = NULL;
 	pkg[0].cb = NULL;
@@ -407,7 +427,7 @@ void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len)
     for(uint8_t i = 1; i <= len; i++){
         pkg[i].msg = *buf++;
         pkg[i].pSave = NULL;
-        pkg[i].cb = NULL;
+        pkg[i].cb = i == len ? callBackSPI : NULL;
         pkg[i].read = 0;
         pkg[i].cs_end = i == len ? 1 : 0;
     }
@@ -430,17 +450,17 @@ static uint8_t get_status(){
     return readRegister(R_REGISTER | NRF_STATUS);
 }
 
-void read(void* buf, uint8_t len)
+void read(uint8_t* buf, uint8_t len)
 {
     // Fetch the payload
-    read_payload(buf, len);
+	read_payLoad(buf, len);
 
     //Clear the only applicable interrupt flags
     writeRegister(NRF_STATUS, _BV(RX_DR));
 }
 
 static void read_payLoad(uint8_t * buf, uint8_t data_len){
-    package pkg [10];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
+    package pkg [35];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
 	pkg[0].msg = R_RX_PAYLOAD;
 	pkg[0].pSave = NULL;
 	pkg[0].cb = NULL;
@@ -449,14 +469,13 @@ static void read_payLoad(uint8_t * buf, uint8_t data_len){
 
     for(uint8_t i = 1; i <= data_len; i++){
         pkg[i].msg = 0xff;
-        pkg[i].pSave = buf++;
+        pkg[i].pSave = &buf[i];
         pkg[i].cb = i == data_len ? callBackSPI : NULL;
-        pkg[i].read = 0;
+        pkg[i].read = 1;
         pkg[i].cs_end = i == data_len ? 1 : 0;
     }
 
     finishSPI = 0;
     SPISend(SPI_0, pkg, data_len + 1, 0);
     while(!finishSPI);
-
 }

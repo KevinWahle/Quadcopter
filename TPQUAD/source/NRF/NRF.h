@@ -10,7 +10,8 @@
  ******************************************************************************/
 #ifndef NRF_H
 #define NRF_H
-
+#include <stdbool.h>
+#include <stdint.h>
 /**
  * @defgroup PALevel Power Amplifier level
  * Power Amplifier level. The units dBm (decibel-milliwatts or dB<sub>mW</sub>)
@@ -98,7 +99,11 @@ typedef enum
 } rf24_crclength_e;
 
 
+bool RF24begin();
+void startListening(void);
 
-
-
+void openReadingPipe(uint8_t child, uint8_t* address);
+void setPALevel(uint8_t level);
+void read(uint8_t* buf, uint8_t len);
+bool available();
 #endif

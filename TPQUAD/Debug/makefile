@@ -16,6 +16,7 @@ RM := rm -rf
 -include source/Sensores/subdir.mk
 -include source/SPI/subdir.mk
 -include source/PIT/subdir.mk
+-include source/NRF/subdir.mk
 -include source/MCAL/subdir.mk
 -include source/I2Cm/subdir.mk
 -include source/Fusion/subdir.mk
@@ -26,7 +27,6 @@ RM := rm -rf
 -include source/CAN/subdir.mk
 -include source/Biquad/subdir.mk
 -include source/ADC/subdir.mk
--include source/subdir.mk
 -include SDK/startup/subdir.mk
 -include SDK/CMSIS/subdir.mk
 -include objects.mk
