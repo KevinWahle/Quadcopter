@@ -236,12 +236,12 @@ void PinConfig (uint8_t pin, uint8_t mux_alt, uint8_t interrupt_alt, uint8_t mod
 void PCSInit(uint8_t SPI_n){
 	switch (SPI_n){
 	case SPI_0:
-		portPtrs[PCS4_PORT(SPI_n)]->PCR[PCS4_PIN(SPI_n)]=0x00;
-		portPtrs[PCS4_PORT(SPI_n)]->PCR[PCS4_PIN(SPI_n)] |= PORT_PCR_MUX(PCS4_ALT) | PORT_PCR_ODE(1);
+		portPtrs[PCS0_PORT(SPI_n)]->PCR[PCS0_PIN(SPI_n)]=0x00;
+		portPtrs[PCS0_PORT(SPI_n)]->PCR[PCS0_PIN(SPI_n)] |= PORT_PCR_MUX(PCS0_ALT) | PORT_PCR_ODE(0);
 
-		portPtrs[PCS5_PORT(SPI_n)]->PCR[PCS5_PIN(SPI_n)]=0x00;	
-		portPtrs[PCS5_PORT(SPI_n)]->PCR[PCS5_PIN(SPI_n)] |= PORT_PCR_MUX(PCS5_ALT) | PORT_PCR_ODE(1);
-	
+		//portPtrs[PCS5_PORT(SPI_n)]->PCR[PCS5_PIN(SPI_n)]=0x00;
+		//portPtrs[PCS5_PORT(SPI_n)]->PCR[PCS5_PIN(SPI_n)] |= PORT_PCR_MUX(PCS5_ALT) | PORT_PCR_ODE(1);
+		break;
 	case SPI_1:
 		portPtrs[PCS1_PORT(SPI_n)]->PCR[PCS1_PIN(SPI_n)]=0x00;
 		portPtrs[PCS1_PORT(SPI_n)]->PCR[PCS1_PIN(SPI_n)] |= PORT_PCR_MUX(PCS1_ALT) | PORT_PCR_ODE(1);
@@ -251,7 +251,7 @@ void PCSInit(uint8_t SPI_n){
 
 		portPtrs[PCS3_PORT(SPI_n)]->PCR[PCS3_PIN(SPI_n)]=0x00;
 		portPtrs[PCS3_PORT(SPI_n)]->PCR[PCS3_PIN(SPI_n)] |= PORT_PCR_MUX(PCS3_ALT) | PORT_PCR_ODE(1);
-
+		break;
 	case SPI_2:
 		portPtrs[PCS0_PORT(SPI_n)]->PCR[PCS0_PIN(SPI_n)]=0x00;
 		portPtrs[PCS0_PORT(SPI_n)]->PCR[PCS0_PIN(SPI_n)] |= PORT_PCR_MUX(PCS0_ALT) | PORT_PCR_ODE(1);
@@ -344,7 +344,4 @@ __ISR__ SPI0_IRQHandler(){
 	gpioWrite(TESTPOINT, LOW);
 #endif
 }
-
-
-
 

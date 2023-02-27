@@ -46,7 +46,7 @@ void myreadCB2();
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init (void)
 {
-    gpioMode(PIN_SW3, INPUT);					//Ya es pullup electricamente
+    //gpioMode(PIN_SW2, INPUT);					//Ya es pullup electricamente
     gpioMode(PIN_SW2, INPUT_PULLUP);
 
     myconfig=&config;
@@ -60,6 +60,7 @@ void App_Init (void)
 
     SPI_config(SPI_0,myconfig);
 
+
     done=0;
 }
 
@@ -72,14 +73,14 @@ void App_Run (void)
 
     
 
-	if (!gpioRead(PIN_SW3)){            //Escribo
-		while (!gpioRead(PIN_SW3));
+	if (!gpioRead(PIN_SW2)){            //Escribo
+		while (!gpioRead(PIN_SW2));
 			sendEscritura();
 			sendLectura();
 	}
 
 	if(done){
-		printf("%c,%c\n", first, second);
+		//printf("%c,%c\n", first, second);
 		first='Z'; second='K';
 		done=0;
 	}

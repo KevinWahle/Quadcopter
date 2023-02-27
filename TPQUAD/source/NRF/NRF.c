@@ -129,7 +129,7 @@ static uint8_t addr_width;
 static uint8_t config_reg;
 static uint8_t pipe0_reading_address[5]; /* Last address set on pipe 0 for reading. */
 static bool _is_p0_rx;                   /* For keeping track of pipe 0's usage in user-triggered RX mode. */
-static uint8_t status = 1;
+static uint8_t status = 0;
 
 static uint8_t child_pipe[] = {RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2,
                                              RX_ADDR_P3, RX_ADDR_P4, RX_ADDR_P5};
@@ -156,6 +156,7 @@ static uint8_t _pa_level_reg_value(uint8_t level, bool lnaEnable);
 static void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len);
 static uint8_t get_status();
 static void read_payLoad(uint8_t * buf, uint8_t data_len);
+static void readSeveral(uint8_t reg, uint8_t* buf, uint8_t len);
 
 bool RF24begin(){
 
@@ -168,7 +169,7 @@ bool RF24begin(){
     SPIconfig.frame_size=8;
     SPIconfig.clk_pol=0;
     SPIconfig.clk_phase=0;
-    SPIconfig.Baud_rate_scaler=0b0011;
+    SPIconfig.Baud_rate_scaler=0b0101;
 
     SPI_config(SPI_0, &SPIconfig);
 
@@ -249,6 +250,7 @@ static void writeRegister(uint8_t reg, uint8_t value){
     finishSPI = 0;
     SPISend(SPI_0, pkg, 2, 0);
     while(!finishSPI);
+    finishSPI++;
 }
 
 static uint8_t readRegister(uint8_t reg){
@@ -458,7 +460,26 @@ void read(uint8_t* buf, uint8_t len)
     //Clear the only applicable interrupt flags
     writeRegister(NRF_STATUS, _BV(RX_DR));
 }
+static void readSeveral(uint8_t reg, uint8_t* buf, uint8_t len){
+    package pkg [35];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
+	pkg[0].msg = R_REGISTER | reg;
+	pkg[0].pSave = NULL;
+	pkg[0].cb = NULL;
+	pkg[0].read = 0;
+	pkg[0].cs_end = 0;
 
+    for(uint8_t i = 1; i <= len; i++){
+        pkg[i].msg = 0xff;
+        pkg[i].pSave = &buf[i-1];
+        pkg[i].cb = i == len ? callBackSPI : NULL;
+        pkg[i].read = 1;
+        pkg[i].cs_end = i == len ? 1 : 0;
+    }
+
+    finishSPI = 0;
+    SPISend(SPI_0, pkg, len + 1, 0);
+    while(!finishSPI);
+}
 static void read_payLoad(uint8_t * buf, uint8_t data_len){
     package pkg [35];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
 	pkg[0].msg = R_RX_PAYLOAD;
@@ -469,7 +490,7 @@ static void read_payLoad(uint8_t * buf, uint8_t data_len){
 
     for(uint8_t i = 1; i <= data_len; i++){
         pkg[i].msg = 0xff;
-        pkg[i].pSave = &buf[i];
+        pkg[i].pSave = &buf[i-1];
         pkg[i].cb = i == data_len ? callBackSPI : NULL;
         pkg[i].read = 1;
         pkg[i].cs_end = i == data_len ? 1 : 0;
