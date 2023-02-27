@@ -1,0 +1,5 @@
+Added Component: Designator=J4(SIP10)
+Added Pin To Net: NetName=GND Pin=J4-2
+Added Pin To Net: NetName=3.3V Pin=R7-2
+Added Member To Class: ClassName=MainBoard Member=Component J4 MPU1
+Added Room: Name=MainBoard

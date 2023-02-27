@@ -1,0 +1,9 @@
+Removed Member From Class: ClassName=MainBoard Member=SUJECION ?
+Added Component: Designator=SUJECION 1(SUJECION (5.00MM - 3.50MM))
+Added Component: Designator=SUJECION 2(SUJECION (5.00MM - 3.50MM))
+Added Component: Designator=SUJECION 3(SUJECION (5.00MM - 3.50MM))
+Added Component: Designator=SUJECION 4(SUJECION (5.00MM - 3.50MM))
+Added Member To Class: ClassName=MainBoard Member=Component SUJECION 1 SUJECION
+Added Member To Class: ClassName=MainBoard Member=Component SUJECION 2 SUJECION
+Added Member To Class: ClassName=MainBoard Member=Component SUJECION 3 SUJECION
+Added Member To Class: ClassName=MainBoard Member=Component SUJECION 4 SUJECION
