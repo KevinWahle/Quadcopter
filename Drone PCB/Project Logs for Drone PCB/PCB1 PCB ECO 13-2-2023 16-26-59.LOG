@@ -1,0 +1,43 @@
+Removed Pin From Net: NetName=NetD1_1 Pin=P?-1
+Removed Pin From Net: NetName=NetD2_1 Pin=P?-3
+Removed Pin From Net: NetName=NetD3_1 Pin=P?-5
+Removed Pin From Net: NetName=NetD4_1 Pin=P?-7
+Removed Pin From Net: NetName=NetD5_1 Pin=P?-9
+Removed Pin From Net: NetName=NetD6_1 Pin=P?-11
+Removed Pin From Net: NetName=GND Pin=R1-2
+Removed Pin From Net: NetName=GND Pin=R2-2
+Removed Pin From Net: NetName=GND Pin=R3-2
+Removed Pin From Net: NetName=GND Pin=R4-2
+Removed Pin From Net: NetName=GND Pin=R5-2
+Removed Pin From Net: NetName=GND Pin=R6-2
+Added Pin To Net: NetName=GND Pin=D1-2
+Added Pin To Net: NetName=GND Pin=D2-2
+Added Pin To Net: NetName=GND Pin=D3-2
+Added Pin To Net: NetName=GND Pin=D4-2
+Added Pin To Net: NetName=GND Pin=D5-2
+Added Pin To Net: NetName=GND Pin=D6-2
+Added Pin To Net: NetName=NetD1_1 Pin=R1-2
+Added Pin To Net: NetName=NetD2_1 Pin=R2-2
+Added Pin To Net: NetName=NetD3_1 Pin=R3-2
+Added Pin To Net: NetName=NetD4_1 Pin=R4-2
+Added Pin To Net: NetName=NetD5_1 Pin=R5-2
+Added Pin To Net: NetName=NetD6_1 Pin=R6-2
+Added Pin To Net: NetName=NetP?_1 Pin=P?-1
+Added Pin To Net: NetName=NetP?_1 Pin=R1-1
+Added Net: Name=NetP?_1
+Added Pin To Net: NetName=NetP?_3 Pin=P?-3
+Added Pin To Net: NetName=NetP?_3 Pin=R2-1
+Added Net: Name=NetP?_3
+Added Pin To Net: NetName=NetP?_5 Pin=P?-5
+Added Pin To Net: NetName=NetP?_5 Pin=R3-1
+Added Net: Name=NetP?_5
+Added Pin To Net: NetName=NetP?_7 Pin=P?-7
+Added Pin To Net: NetName=NetP?_7 Pin=R4-1
+Added Net: Name=NetP?_7
+Added Pin To Net: NetName=NetP?_9 Pin=P?-9
+Added Pin To Net: NetName=NetP?_9 Pin=R5-1
+Added Net: Name=NetP?_9
+Added Pin To Net: NetName=NetP?_11 Pin=P?-11
+Added Pin To Net: NetName=NetP?_11 Pin=R6-1
+Added Net: Name=NetP?_11
+Added Room: Name=MainBoard
