@@ -62,6 +62,13 @@ void U2PWM(double U[KX_ROWS][1], double MotorsPWM[4]){
  	 U[2] = F3 - F1				     (U3)
  	 U[3] = c*(F4 + F2 - F1 - F3)    (U4)
 */
+/*
+	eqn1 = F1 + F2 + F3 + F4 == U1;
+	eqn2 = F3 - F1 == U2;
+	eqn3 = F4 - F2 == U3; 
+	eqn4 = +c*F1 + c*F3 - c*F2 - c*F4 == U4;
+*/
+
 	double c = 10; // ????????????????????????????????????
 	double F1 = (U[3][0] + U[0][0]*c - 2*U[1][0]*c)/(4*c);
 	double F2 = -(U[3][0] - U[0][0]*c + 2*U[2][0]*c)/(4*c);

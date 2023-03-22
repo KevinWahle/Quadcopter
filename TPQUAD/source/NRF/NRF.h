@@ -106,4 +106,6 @@ void openReadingPipe(uint8_t child, uint8_t* address);
 void setPALevel(uint8_t level);
 void read(uint8_t* buf, uint8_t len);
 bool available();
+void read_payLoad(uint8_t data_len);
+void readLastData(uint8_t* buf, uint8_t data_len);
 #endif

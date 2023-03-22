@@ -1151,13 +1151,13 @@ TSE = sum((v - PWM).^2);                                              % Total Sq
 figure(1)
 plot(Forza, PWM, 'bp')
 hold on
-plot(Forza, v, '-r')
-% hold on
-% clear s;
-% pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
-% s = -1:0.01:10;
-% plot(s, pwm(s));
-% grid on
+%plot(Forza, v, '-r')
+%hold on
+clear s;
+pwm = @(s) p(1)*s.^2 + p(2)*s + p(3);
+s = -0.5:0.01:6;
+plot(s, pwm(s));
+grid on
 %% Solver 
 syms F1 F2 F3 F4 b U1 U2 U3 U4 c
 eqn1 = F1 + F2 + F3 + F4 == U1;

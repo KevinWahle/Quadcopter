@@ -15,6 +15,7 @@
 #include <arm_math.h>
 #include "ControlPC/ControlPC.h"
 #include "Biquad/Biquad.h"
+#include "NRF/RF.h"
 
 typedef struct{
 	double roll;
@@ -52,7 +53,7 @@ static void startI2C_ACCELEROMETER_CallBack();
 static void getEulerAnglesRates(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
 static void startI2CreadingCallBack();
 static void startI2C_ACCELEROMETER_CallBack();
-static void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]);
+static void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4], EulerAngles * setPointAnglesPtr);
 static double getU1fromSBUS();
 static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
 static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts);
@@ -74,6 +75,8 @@ static int8_t megaTabla[2048]; // Debug purposes
 static uint16_t indexMegaTabla; // Debug purposes
 
 EulerAnglesRates lastRates;
+
+OrientationRF RFchannel;
 
 static char strChannels[100];
 static void sendUartMessage3Channels(double* msg1)
@@ -138,7 +141,7 @@ double a[5][3] = {
 	}
 	
 
-	controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
+	//controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
 
 
 }
@@ -179,6 +182,12 @@ void App_Run (void)
 	gpioWrite(LED_1, HIGH); // Calibrations Start
 	ESCInit();
 	ESCCalibrate();
+//========================== RF init ===================================
+	RFinit();
+	RFbegin();
+	gpioWrite(LED_3, HIGH); // Calibration RF starts
+	RFcalibrate();
+	gpioWrite(LED_3, LOW); // Calibration RF ends
 //======================================================================
 //========================== Madwick init ==============================
 //======================================================================
@@ -249,7 +258,10 @@ void App_Run (void)
 		
         // ==================================================================
 		if(initialising == false){     // si ya inicializo, corro el sistema de control
-			runControlStep(&eulerAngles, &eulerRates, speed);
+			RFgetDeNormalizedData(&RFchannel);
+			RF2Newton(&RFchannel);
+			EulerAngles anglesSetPoint = {.pitch = RFchannel.pitch, .roll = RFchannel.roll, .yaw = RFchannel.yaw};
+			runControlStep(&eulerAngles, &eulerRates, speed, &anglesSetPoint);
 			/*speed[0] = 0.2;
 			speed[1] = 0.2;
 			speed[2] = 0.2;
@@ -322,9 +334,11 @@ double Ki[KI_ROWS][KI_COLUMNS] = {
 	{0.0000000, 0.0000000}
 };
 
-void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4]){
+void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4], EulerAngles * setPointAnglesPtr){
 	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}};
 	double outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
+	referenceIntegrator[0][0] = setPointAnglesPtr->roll * DEG2RAD;
+	referenceIntegrator[1][0] = setPointAnglesPtr->pitch * DEG2RAD;
 	bool saturation = integrateError(statesIntegrator, referenceIntegrator,
 				   1e-3, outputIntError, Ki[1][0]);
 	gpioWrite(LED_6, saturation);
@@ -332,6 +346,8 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 
 	double outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR][1];
 	double statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {AnglesRates->roll_dot * DEG2RAD}, {Angles->pitch * DEG2RAD}, {AnglesRates->pitch_dot * DEG2RAD}, {Angles->yaw * DEG2RAD}, {AnglesRates->yaw_dot * DEG2RAD}};
+	referenceProportional[0][0] = setPointAnglesPtr->roll * DEG2RAD;
+	referenceProportional[2][0] = setPointAnglesPtr->pitch * DEG2RAD;
 	proportionalError(statesProportional, referenceProportional,
 					  outputPropError);
 
@@ -341,7 +357,8 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
 	double U[4][1];
 	denormalized_U_total(KxU, KiU, U);
-	U[0][0] = (double)getDataFromPC();
+	//U[0][0] = (double)getDataFromPC();
+	U[0][0] = RFchannel.throttle;
 	//U[0][0] = 3;
 	if(U[0][0] > 8){
 		gpioWrite(LED_2, HIGH);

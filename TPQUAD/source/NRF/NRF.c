@@ -137,6 +137,7 @@ static uint8_t child_pipe[] = {RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2,
 static uint8_t child_pipe_enable[] = {ERX_P0, ERX_P1, ERX_P2,
                                                     ERX_P3, ERX_P4, ERX_P5};
 
+static uint8_t bufferRead[32];
 
 /*Prototipos locales*/
 static void setRetries(uint8_t delay, uint8_t count);
@@ -144,6 +145,7 @@ static void writeRegister(uint8_t reg, uint8_t value);
 static uint8_t readRegister(uint8_t reg);
 static void setDataRate(rf24_datarate_e speed);
 static void callBackSPI();
+static void callBackSPIRead();
 static void toggle_features(void);
 static void setPayloadSize(uint8_t size);
 static void setAddressWidth(uint8_t a_width);
@@ -155,7 +157,6 @@ void setPALevel(uint8_t level);
 static uint8_t _pa_level_reg_value(uint8_t level, bool lnaEnable);
 static void writeSeveralRegisters(uint8_t reg, const uint8_t* buf, uint8_t len);
 static uint8_t get_status();
-static void read_payLoad(uint8_t * buf, uint8_t data_len);
 static void readSeveral(uint8_t reg, uint8_t* buf, uint8_t len);
 
 bool RF24begin(){
@@ -250,7 +251,7 @@ static void writeRegister(uint8_t reg, uint8_t value){
     finishSPI = 0;
     SPISend(SPI_0, pkg, 2, 0);
     while(!finishSPI);
-    finishSPI++;
+    //finishSPI++;
 }
 
 static uint8_t readRegister(uint8_t reg){
@@ -286,7 +287,10 @@ static void setDataRate(rf24_datarate_e speed){
 static void callBackSPI(){
     finishSPI = 1;
 }
-
+static void callBackSPIRead(){
+    finishSPI = 1;
+    //Clear the only applicable interrupt flags
+}
 static void toggle_features(void)
 {
     package pkg[2];
@@ -452,13 +456,13 @@ static uint8_t get_status(){
     return readRegister(R_REGISTER | NRF_STATUS);
 }
 
-void read(uint8_t* buf, uint8_t len)
+void read(uint8_t* buf, uint8_t len)  // No hace nada ahora
 {
     // Fetch the payload
-	read_payLoad(buf, len);
+	//read_payLoad(buf, len);
 
     //Clear the only applicable interrupt flags
-    writeRegister(NRF_STATUS, _BV(RX_DR));
+    //writeRegister(NRF_STATUS, _BV(RX_DR));
 }
 static void readSeveral(uint8_t reg, uint8_t* buf, uint8_t len){
     package pkg [35];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
@@ -480,7 +484,7 @@ static void readSeveral(uint8_t reg, uint8_t* buf, uint8_t len){
     SPISend(SPI_0, pkg, len + 1, 0);
     while(!finishSPI);
 }
-static void read_payLoad(uint8_t * buf, uint8_t data_len){
+void read_payLoad(uint8_t data_len){  // Async
     package pkg [35];  // VER BIEN LA CANTIDAD MAXIMA DE SIZE DE ADDRESSES
 	pkg[0].msg = R_RX_PAYLOAD;
 	pkg[0].pSave = NULL;
@@ -490,13 +494,21 @@ static void read_payLoad(uint8_t * buf, uint8_t data_len){
 
     for(uint8_t i = 1; i <= data_len; i++){
         pkg[i].msg = 0xff;
-        pkg[i].pSave = &buf[i-1];
-        pkg[i].cb = i == data_len ? callBackSPI : NULL;
+        pkg[i].pSave = &bufferRead[i-1];
+        pkg[i].cb = i == data_len ? callBackSPIRead : NULL;
         pkg[i].read = 1;
         pkg[i].cs_end = i == data_len ? 1 : 0;
     }
-
     finishSPI = 0;
     SPISend(SPI_0, pkg, data_len + 1, 0);
     while(!finishSPI);
+    writeRegister(NRF_STATUS, _BV(RX_DR));
+}
+
+void readLastData(uint8_t* buf, uint8_t data_len){
+    for (uint8_t i = 0; i < data_len; i++)
+    {
+        buf[i] = bufferRead[i];
+    }
+    
 }

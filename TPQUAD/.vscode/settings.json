@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "gpio.h": "c",
+        "spi.h": "c",
+        "timer.h": "c",
+        "rf.h": "c",
+        "nrf.h": "c"
+    }
+}
