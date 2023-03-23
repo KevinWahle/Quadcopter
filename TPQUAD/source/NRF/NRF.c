@@ -492,15 +492,15 @@ void read_payLoad(uint8_t data_len){  // Async
 	pkg[0].read = 0;
 	pkg[0].cs_end = 0;
 
-    for(uint8_t i = 1; i <= data_len; i++){
+    for(uint8_t i = 1; i <= 32; i++){
         pkg[i].msg = 0xff;
-        pkg[i].pSave = &bufferRead[i-1];
-        pkg[i].cb = i == data_len ? callBackSPIRead : NULL;
-        pkg[i].read = 1;
-        pkg[i].cs_end = i == data_len ? 1 : 0;
+        pkg[i].pSave =  (i <= data_len) ? &bufferRead[i-1] : NULL;
+        pkg[i].cb = i == 32 ? callBackSPIRead : NULL;
+        pkg[i].read = (i <= data_len) ? 1 : 0;
+        pkg[i].cs_end = i == 32 ? 1 : 0;
     }
     finishSPI = 0;
-    SPISend(SPI_0, pkg, data_len + 1, 0);
+    SPISend(SPI_0, pkg, 32 + 1, 0);
     while(!finishSPI);
     writeRegister(NRF_STATUS, _BV(RX_DR));
 }

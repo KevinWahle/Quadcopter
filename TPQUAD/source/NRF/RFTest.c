@@ -39,7 +39,7 @@ void App_Run (void)
     timerDelay(TIMER_MS2TICKS(10));
     RFcalibrate();
     while(1){
-        timerDelay(TIMER_MS2TICKS(500));
+        timerDelay(TIMER_MS2TICKS(100));
         RFgetDeNormalizedData(&orRF);
         RF2Newton(&orRF);
         double tmp[3];

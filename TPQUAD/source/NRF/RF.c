@@ -10,6 +10,7 @@
 static uint8_t internalBuffer[32];
 static uint8_t address[6] = "00001";
 static bool atLeastOneAvailable = false;
+static bool timeOut = false;
 
 static tim_id_t timeOutRF; 
 
@@ -50,22 +51,22 @@ void RFcalibrate(){
         calibrationValues.yaw = sums[3] / 5.0; 
 }
 void callBackTimeOut(){
-    internalBuffer[0] = 0;
+    timeOut = true;
 }
 void RFgetDeNormalizedData(OrientationRF * dataPtr){
-   /* static bool triggerTimeOut = true;
+    static bool triggerTimeOut = true;
     if(triggerTimeOut){
         timerStart(timeOutRF, TIMER_MS2TICKS(1000), TIM_MODE_SINGLESHOT, callBackTimeOut);
         triggerTimeOut = false;
-    }*/
+    }
     if(available()){
     	read_payLoad(4);
-        //timerStop(timeOutRF);
-       // triggerTimeOut = true;
+        timerStop(timeOutRF);
+        triggerTimeOut = true;
     }
-    hw_DisableInterrupts();
     readLastData(internalBuffer, 4);
-    hw_EnableInterrupts();
+    if(timeOut)
+        internalBuffer[0] = 0;
     dataPtr->throttle = internalBuffer[0];
     dataPtr->pitch = internalBuffer[1];
     dataPtr->roll = internalBuffer[2];

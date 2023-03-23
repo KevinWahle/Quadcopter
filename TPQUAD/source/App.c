@@ -186,6 +186,7 @@ void App_Run (void)
 	RFinit();
 	RFbegin();
 	gpioWrite(LED_3, HIGH); // Calibration RF starts
+	timerDelay(TIMER_MS2TICKS(10));
 	RFcalibrate();
 	gpioWrite(LED_3, LOW); // Calibration RF ends
 //======================================================================
