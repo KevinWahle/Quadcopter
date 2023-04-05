@@ -6,7 +6,7 @@
 #include "MCAL/gpio.h"
 #include <string.h>
 
-#define CE          PORTNUM2PIN(PB, 2)
+#define CE          PORTNUM2PIN(PB, 23)
 
 /* Memory Map */
 #define NRF_CONFIG  0x00

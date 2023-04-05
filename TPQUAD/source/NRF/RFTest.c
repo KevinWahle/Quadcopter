@@ -41,7 +41,7 @@ void App_Run (void)
     while(1){
         timerDelay(TIMER_MS2TICKS(100));
         RFgetDeNormalizedData(&orRF);
-        RF2Newton(&orRF);
+        //RF2Newton(&orRF);
         double tmp[3];
         tmp[0] = orRF.throttle;
         tmp[1] = orRF.pitch;

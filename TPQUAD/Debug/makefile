@@ -27,6 +27,7 @@ RM := rm -rf
 -include source/CAN/subdir.mk
 -include source/Biquad/subdir.mk
 -include source/ADC/subdir.mk
+-include source/subdir.mk
 -include SDK/startup/subdir.mk
 -include SDK/CMSIS/subdir.mk
 -include objects.mk
