@@ -291,9 +291,6 @@
 					</folderInfo>
 					<fileInfo id="com.crt.advproject.config.exe.debug.1284265667.1194697540" name="DMA.h" rcbsApplicability="disable" resourcePath="source/DMA/DMA.h" toolsToInvoke=""/>
 					<fileInfo id="com.crt.advproject.config.exe.debug.1284265667.1619467679" name="MPU9250.h" rcbsApplicability="disable" resourcePath="source/Sensores/MPU9250.h" toolsToInvoke=""/>
-					<fileInfo id="com.crt.advproject.config.exe.debug.1284265667.1918509633" name="test_MPU6050.c" rcbsApplicability="disable" resourcePath="source/Sensores/test_MPU6050.c" toolsToInvoke="com.crt.advproject.gcc.exe.debug.1546198014.536556970">
-						<tool id="com.crt.advproject.gcc.exe.debug.1546198014.536556970" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug.1546198014"/>
-					</fileInfo>
 					<folderInfo id="com.crt.advproject.config.exe.debug.1284265667.900885695" name="/" resourcePath="source/Fusion">
 						<toolChain id="com.crt.advproject.toolchain.exe.debug.1306947918" name="NXP MCU Tools" superClass="com.crt.advproject.toolchain.exe.debug" unusedChildren="">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.debug" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.exe.debug"/>

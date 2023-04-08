@@ -1,0 +1,52 @@
+/*
+* Arduino Wireless Communication Tutorial
+*     Example 1 - Transmitter Code
+*                
+* by Dejan Nedelkovski, www.HowToMechatronics.com
+* 
+* Library: TMRh20/RF24, https://github.com/tmrh20/RF24/
+*/
+
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+const int adcPin1 = A5; // Analog input pin for first ADC
+const int adcPin2 = A4; // Analog input pin for second ADC
+const int adcPin3 = A3; // Analog input pin for third ADC
+
+
+RF24 radio(4, 3); // CE, CSN
+
+const byte address[6] = "00001";
+
+void setup() {
+  radio.begin();
+  radio.openWritingPipe(address);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.stopListening();
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Read the first ADC input
+  int adcValue1 = analogRead(adcPin1);
+
+  // Read the second ADC input
+  int adcValue2 = analogRead(adcPin2);
+
+  // Read the third ADC input
+  int adcValue3 = analogRead(adcPin3);
+
+  uint8_t text[4];
+//  text[0] = adcValue1;
+//  text[1] = adcValue2;
+//  text[2] = adcValue3;
+//  text[3] = 0;
+  text[0] = uint8_t((double)adcValue1/1023.0*255.0);
+  text[1] = uint8_t((double)adcValue2/1023.0*255.0);
+  text[2] = uint8_t((double)adcValue3/1023.0*255.0);
+  text[3] = 0;
+  radio.write(&text, 4);
+  delay(100);
+}
