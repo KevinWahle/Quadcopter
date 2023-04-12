@@ -71,9 +71,6 @@ BiQuad filter_yaw_dot_stgs[5];
 
 bool flagBorrable = false;
  
-static int8_t megaTabla[2048]; // Debug purposes
-static uint16_t indexMegaTabla; // Debug purposes
-
 EulerAnglesRates lastRates;
 
 OrientationRF RFchannel;
@@ -268,28 +265,17 @@ void App_Run (void)
 			speed[2] = 0.2;
 			speed[3] = 0.2;*/
 			ESCSetSpeed(speed);
-	/*
-			if(timerExpired(timerStationary) || flagBorrable){
-				flagBorrable = true;
-				if(indexMegaTabla < 2048){
-					gpioWrite(LED_6, HIGH);
-					megaTabla[indexMegaTabla] = (int8_t)eulerRates.roll_dot;
-					indexMegaTabla++;
-				}
-				else 
-					gpioWrite(LED_6, LOW);
-			}
-	*/
+
 			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
-/*
+
 			if(timerExpired(timerUart)){
 				//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
 				//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
 				//double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw}; //, pitch, roll, 180};
-				double tmp[3] = {eulerRates.roll_dot, eulerRates.pitch_dot, eulerRates.yaw_dot};
+				double tmp[3] = {RFchannel.throttle, RFchannel.pitch, RFchannel.roll};
 				sendUartMessage3Channels(tmp);
 				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
-			}*/
+			}
 		}
 		else{
 			fusionFlags = FusionAhrsGetFlags(&ahrs);
@@ -304,14 +290,6 @@ void App_Run (void)
 		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
 	}
 	ESCDisarm();
-/*
-	timerDelay(TIMER_MS2TICKS(3000));
-	for (uint16_t i = 0; i < 2048; i++)
-	{
-		printf("%d, ", megaTabla[i]);
-	}
-*/	
-
 	while(1){                                // forever blink
 		gpioToggle(LED_1);
 		timerDelay(TIMER_MS2TICKS(250));
