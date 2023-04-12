@@ -1,5 +1,0 @@
-../source/event_queue/event_queue.c:31:5:add_event	24	static
-../source/event_queue/event_queue.c:43:9:get_next_event	4	static
-../source/event_queue/event_queue.c:50:5:skip_event	4	static
-../source/event_queue/event_queue.c:58:6:empty_queue	4	static
-../source/event_queue/event_queue.c:62:5:is_queue_empty	4	static

@@ -1,8 +1,0 @@
-../source/buffer/circular_buffer_16.c:11:17:getCircularPointer	16	static
-../source/buffer/circular_buffer_16.c:15:6:CBinit16	16	static
-../source/buffer/circular_buffer_16.c:21:6:CBisEmpty16	16	static
-../source/buffer/circular_buffer_16.c:25:6:CBputChain16	32	static
-../source/buffer/circular_buffer_16.c:36:6:CBputByte16	16	static
-../source/buffer/circular_buffer_16.c:44:10:CBgetByte16	24	static
-../source/buffer/circular_buffer_16.c:53:10:CBgetBufferState16	16	static
-../source/buffer/circular_buffer_16.c:63:6:CBreset16	24	static

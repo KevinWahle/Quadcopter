@@ -1,8 +1,0 @@
-../SDK/CMSIS/core_cm4.h:1678:22:__NVIC_EnableIRQ	16	static
-../source/PIT/PIT.c:73:6:PITInit	24	static
-../source/PIT/PIT.c:103:6:PITStart	16	static
-../source/PIT/PIT.c:111:6:PITStop	16	static
-../source/PIT/PIT.c:122:9:PIT0_IRQHandler	16	static
-../source/PIT/PIT.c:135:9:PIT1_IRQHandler	16	static
-../source/PIT/PIT.c:140:9:PIT2_IRQHandler	16	static
-../source/PIT/PIT.c:145:9:PIT3_IRQHandler	16	static

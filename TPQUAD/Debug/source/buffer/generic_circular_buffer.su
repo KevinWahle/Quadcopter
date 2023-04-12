@@ -1,8 +1,0 @@
-../source/buffer/generic_circular_buffer.c:12:17:getCircularPointer	16	static
-../source/buffer/generic_circular_buffer.c:16:6:GCBinit	16	static
-../source/buffer/generic_circular_buffer.c:26:6:GCBisEmpty	16	static
-../source/buffer/generic_circular_buffer.c:30:6:GCBputDataChain	32	static
-../source/buffer/generic_circular_buffer.c:36:6:GCBputData	24	static
-../source/buffer/generic_circular_buffer.c:51:6:GCBgetData	24	static
-../source/buffer/generic_circular_buffer.c:64:6:GCBreset	24	static
-../source/buffer/generic_circular_buffer.c:73:10:GCBgetBufferState	16	static

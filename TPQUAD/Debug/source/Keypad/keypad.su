@@ -1,5 +1,0 @@
-../source/Keypad/keypad.c:42:6:keypadInit	16	static
-../source/Keypad/keypad.c:60:6:sleep_cb	8	static
-../source/Keypad/keypad.c:64:6:volup_cb	8	static
-../source/Keypad/keypad.c:68:6:voldown_cb	8	static
-../source/Keypad/keypad.c:72:6:pause_cb	8	static

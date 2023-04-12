@@ -1,3 +1,0 @@
-../source/ADC/ADC_hal.c:73:6:ADCh_Init	16	static
-../source/ADC/ADC_hal.c:91:6:ADCh_Start	24	static
-../source/ADC/ADC_hal.c:116:6:add_buff_cb	16	static

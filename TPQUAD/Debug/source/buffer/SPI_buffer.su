@@ -1,8 +1,0 @@
-../source/buffer/SPI_buffer.c:15:16:getCircularPointer	16	static
-../source/buffer/SPI_buffer.c:19:6:SPIBinit	16	static
-../source/buffer/SPI_buffer.c:24:6:SPIBisEmpty	16	static
-../source/buffer/SPI_buffer.c:28:6:SPIBputChain	32	static
-../source/buffer/SPI_buffer.c:39:6:SPIBputByte	16	static
-../source/buffer/SPI_buffer.c:48:9:SPIBgetPckg	40	static
-../source/buffer/SPI_buffer.c:58:10:SPIBgetBufferState	16	static
-../source/buffer/SPI_buffer.c:65:6:SPIBreset	24	static

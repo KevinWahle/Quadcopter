@@ -8,7 +8,7 @@
 
 // Defino que el ajuste por integral no puede ser mayor a 1N de diferencia
 
-#define MAX_INTEGRAL_ERROR_NEWTON	1    // 0.2 Newton
+#define MAX_INTEGRAL_ERROR_NEWTON	0.5    // 0.2 Newton
 
 static const double coeffPoly[3] = COEFF_POLY;
 

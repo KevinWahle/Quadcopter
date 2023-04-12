@@ -112,15 +112,15 @@ void App_Init (void)
 	gpioWrite(LOOP_TIME_PIN, LOW);
 
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
-
+/*
 double b[5][3] = {
 	{0.0095958, 0.0191915, 0.0095958},
 	{0.1084782, 0.1084782, 0.0000000},
 	{0.0293045, 0.0586090, 0.0293045},
 	{0.0179138, 0.0358276, 0.0179138},
 	{0.0468088, 0.0936176, 0.0468088}
-};
-
+};*/
+/*
 double a[5][3] = {
 	{1.0000000, -1.7792211, 0.8851647},
 	{1.0000000, -0.9213973, 0.0000000},
@@ -128,7 +128,22 @@ double a[5][3] = {
 	{1.0000000, -1.8238846, 0.8584440},
 	{1.0000000, -1.7378414, 0.9250766}
 };
+*/
 
+double b[5][3] = {
+		{0.0087849, 0.0175698, 0.0087849},
+		{0.0071376, 0.0142751, 0.0071376},
+		{0.0045431, 0.0090861, 0.0045431},
+		{0.0019735, 0.0039470, 0.0019735},
+		{0.0003915, 0.0007830, 0.0003915}
+};
+double a[5][3] = {
+		{1.0000000, -1.9564952, 0.9916347},
+		{1.0000000, -1.9473261, 0.9758764},
+		{1.0000000, -1.9444096, 0.9625818},
+		{1.0000000, -1.9450646, 0.9529586},
+		{1.0000000, -1.9463388, 0.9479047}
+};
 
 	for (uint8_t i = 0; i < 5; i++)
 	{
@@ -258,7 +273,8 @@ void App_Run (void)
 		if(initialising == false){     // si ya inicializo, corro el sistema de control
 			RFgetDeNormalizedData(&RFchannel);
 			RF2Newton(&RFchannel);
-			EulerAngles anglesSetPoint = {.pitch = RFchannel.pitch, .roll = RFchannel.roll, .yaw = RFchannel.yaw};
+			//EulerAngles anglesSetPoint = {.pitch = RFchannel.pitch, .roll = RFchannel.roll, .yaw = RFchannel.yaw};
+			EulerAngles anglesSetPoint = {0.0, 0.0, 0.0};
 			runControlStep(&eulerAngles, &eulerRates, speed, &anglesSetPoint);
 			/*speed[0] = 0.2;
 			speed[1] = 0.2;
@@ -268,14 +284,14 @@ void App_Run (void)
 
 			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
 
-			if(timerExpired(timerUart)){
+			/*if(timerExpired(timerUart)){
 				//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
 				//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
 				//double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw}; //, pitch, roll, 180};
 				double tmp[3] = {RFchannel.throttle, RFchannel.pitch, RFchannel.roll};
 				sendUartMessage3Channels(tmp);
 				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
-			}
+			}*/
 		}
 		else{
 			fusionFlags = FusionAhrsGetFlags(&ahrs);
@@ -300,17 +316,20 @@ double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}
 
 
 double Kx[KX_ROWS][KX_COLUMNS] = {
-	{0.0000000, 0.0000000, -0.0000000, 0.0000000, -0.0000000, -0.0000000},
-	{5.1498579, 0.5732894, 0.0000000, -0.0000000, 0.0000000, 0.0000000},
-	{-0.0000000, -0.0000000, 5.1498579, 0.5732894, 0.0000000, 0.0000000},
-	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.9705879, 0.3239483}
+		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000},
+		{5.3098001, 0.5820865, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+		{-0.0000000, 0.0000000, 5.3098001, 0.5820865, 0.0000000, 0.0000000},
+		{0.0000000, 0.0000000, 0.0000000, 0.0000000, 3.0598114, 0.3570402}
 };
 
+
+
+
 double Ki[KI_ROWS][KI_COLUMNS] = {
-	{0.0000000, -0.0000000},
-	{1.7164943, 0.0000000},
-	{-0.0000000, 1.7164943},
-	{0.0000000, 0.0000000}
+		{-0.0000000, -0.0000000},
+		{3.1334397, 0.0000000},
+		{-0.0000000, 3.1334397},
+		{-0.0000000, -0.0000000}
 };
 
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4], EulerAngles * setPointAnglesPtr){

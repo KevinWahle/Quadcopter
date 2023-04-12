@@ -1,5 +1,0 @@
-../source/SPI/SPITest.c:47:6:App_Init	8	static
-../source/SPI/SPITest.c:68:6:App_Run	8	static
-../source/SPI/SPITest.c:89:6:myreadCB	4	static
-../source/SPI/SPITest.c:99:6:sendEscritura	8	static
-../source/SPI/SPITest.c:121:6:sendLectura	8	static
