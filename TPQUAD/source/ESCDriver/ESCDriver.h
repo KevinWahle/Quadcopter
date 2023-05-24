@@ -68,10 +68,10 @@ void ESCCalibrate();
 
 /**
  * @brief Setea la velocidad de los motores
- * @param spped: Arreglo con las velocidades de cada motor. double de 0.0 a 1.0.
+ * @param spped: Arreglo con las velocidades de cada motor. float de 0.0 a 1.0.
  * 				Otros valores tienen comportamiento indeterminado
 */
-void ESCSetSpeed(double speed[MOTOR_COUNT]);
+void ESCSetSpeed(float speed[MOTOR_COUNT]);
 
 /*******************************************************************************
  ******************************************************************************/

@@ -1,5 +1,5 @@
 		%Acc[0] = LPF_ACC_ALPHA * AccPrev[0] + (1.0f - LPF_ACC_ALPHA) * Acc[0];
-alpha = 0.7
+alpha = 0.94
 b = [1-alpha];
 a = [1 -alpha];
 

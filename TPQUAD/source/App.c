@@ -18,15 +18,15 @@
 #include "NRF/RF.h"
 
 typedef struct{
-	double roll;
-	double pitch;
-	double yaw;
+	float roll;
+	float pitch;
+	float yaw;
 }EulerAngles;
 
 typedef struct{
-	double roll_dot;
-	double pitch_dot;
-	double yaw_dot;
+	float roll_dot;
+	float pitch_dot;
+	float yaw_dot;
 }EulerAnglesRates;
 
 
@@ -47,16 +47,18 @@ typedef struct{
 
 #define LPF_ACC_ALPHA 0.7f
 
-static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts);
+static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, float Ts);
 static void startI2CreadingCallBack();
 static void startI2C_ACCELEROMETER_CallBack();
 static void getEulerAnglesRates(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
 static void startI2CreadingCallBack();
 static void startI2C_ACCELEROMETER_CallBack();
-static void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4], EulerAngles * setPointAnglesPtr);
-static double getU1fromSBUS();
+static void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, float U_PWM[4], EulerAngles * setPointAnglesPtr);
+static float getU1fromSBUS();
 static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, EulerAnglesRates* rates);
-static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts);
+static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, float Ts);
+
+void calcRollPitch(float accelX, float accelY, float accelZ, float *roll, float *pitch);
 Acc accelData;
 Gyro gyroData;
 EulerAngles AnglesIntegrated;
@@ -64,7 +66,7 @@ tim_id_t I2CtriggerAcc;
 SBUSData_t sbus;
 FusionAhrsFlags fusionFlags;
 bool initialising = true;
-double speed[4] = {0.0, 0.0, 0.0, 0.0};
+float speed[4] = {0.0, 0.0, 0.0, 0.0};
 BiQuad filter_roll_dot_stgs[5];
 BiQuad filter_pitch_dot_stgs[5];
 BiQuad filter_yaw_dot_stgs[5];
@@ -76,13 +78,13 @@ EulerAnglesRates lastRates;
 OrientationRF RFchannel;
 
 static char strChannels[100];
-static void sendUartMessage3Channels(double* msg1)
+static void sendUartMessage3Channels(float* msg1)
 {
 	uint16_t charCount= sprintf(strChannels, "%.1f, %.1f, %.1f \r\n",
 						msg1[0], msg1[1], msg1[2]);
 	uartWriteMsg(UART_ID, strChannels, charCount);
 }
-static void sendUartMessage6Channels(double* msg1)
+static void sendUartMessage6Channels(float* msg1)
 {
 	uint16_t charCount= sprintf(strChannels, "%.1f, %.1f, %.1f,%.1f, %.1f, %.1f \r\n",
 						msg1[0], msg1[1], msg1[2], msg1[3], msg1[4], msg1[5]);
@@ -113,7 +115,7 @@ void App_Init (void)
 
 	gpioMode(PIN_SW2, SW2_INPUT_TYPE);
 /*
-double b[5][3] = {
+float b[5][3] = {
 	{0.0095958, 0.0191915, 0.0095958},
 	{0.1084782, 0.1084782, 0.0000000},
 	{0.0293045, 0.0586090, 0.0293045},
@@ -121,7 +123,7 @@ double b[5][3] = {
 	{0.0468088, 0.0936176, 0.0468088}
 };*/
 /*
-double a[5][3] = {
+float a[5][3] = {
 	{1.0000000, -1.7792211, 0.8851647},
 	{1.0000000, -0.9213973, 0.0000000},
 	{1.0000000, -1.7306458, 0.9736852},
@@ -130,14 +132,14 @@ double a[5][3] = {
 };
 */
 
-double b[5][3] = {
+float b[5][3] = {
 		{0.0087849, 0.0175698, 0.0087849},
 		{0.0071376, 0.0142751, 0.0071376},
 		{0.0045431, 0.0090861, 0.0045431},
 		{0.0019735, 0.0039470, 0.0019735},
 		{0.0003915, 0.0007830, 0.0003915}
 };
-double a[5][3] = {
+float a[5][3] = {
 		{1.0000000, -1.9564952, 0.9916347},
 		{1.0000000, -1.9473261, 0.9758764},
 		{1.0000000, -1.9444096, 0.9625818},
@@ -193,14 +195,14 @@ void App_Run (void)
 
 	gpioWrite(LED_1, HIGH); // Calibrations Start
 	ESCInit();
-	ESCCalibrate();
+	//ESCCalibrate();
 //========================== RF init ===================================
-	RFinit();
+	/*RFinit();
 	RFbegin();
 	gpioWrite(LED_3, HIGH); // Calibration RF starts
 	timerDelay(TIMER_MS2TICKS(10));
 	RFcalibrate();
-	gpioWrite(LED_3, LOW); // Calibration RF ends
+	gpioWrite(LED_3, LOW); // Calibration RF ends*/
 //======================================================================
 //========================== Madwick init ==============================
 //======================================================================
@@ -261,7 +263,17 @@ void App_Run (void)
         EulerAngles eulerAngles = {.pitch = euler.angle.pitch, .roll = euler.angle.roll, .yaw = euler.angle.yaw};
         EulerAnglesRates eulerRates;
         getEulerAnglesRatesFAST(&sampleGyro, &eulerAngles, &eulerRates);
+		/*float rollAcc, pitchAcc;
+		float rollAccSINFIL;
+		calcRollPitch(sampleAcc.X, sampleAcc.Y, sampleAcc.Z, &rollAccSINFIL, &pitchAcc);
 
+		for (uint8_t i = 0; i < 5; i++)
+		{
+			rollAcc = BiQuad_filter(&filter_roll_dot_stgs[i], rollAcc);
+		}
+		
+		calcRollPitch(sampleAcc.X, sampleAcc.Y, sampleAcc.Z, &rollAcc, &pitchAcc);
+		*/
 		for (uint8_t i = 0; i < 5; i++)
 		{
 			eulerRates.roll_dot = BiQuad_filter(&filter_roll_dot_stgs[i], eulerRates.roll_dot);
@@ -271,27 +283,28 @@ void App_Run (void)
 		
         // ==================================================================
 		if(initialising == false){     // si ya inicializo, corro el sistema de control
-			RFgetDeNormalizedData(&RFchannel);
-			RF2Newton(&RFchannel);
+			//RFgetDeNormalizedData(&RFchannel);
+			//RF2Newton(&RFchannel);
 			//EulerAngles anglesSetPoint = {.pitch = RFchannel.pitch, .roll = RFchannel.roll, .yaw = RFchannel.yaw};
 			EulerAngles anglesSetPoint = {0.0, 0.0, 0.0};
 			runControlStep(&eulerAngles, &eulerRates, speed, &anglesSetPoint);
-			/*speed[0] = 0.2;
+			speed[0] = 0.2;
 			speed[1] = 0.2;
 			speed[2] = 0.2;
-			speed[3] = 0.2;*/
+			speed[3] = 0.2;
 			ESCSetSpeed(speed);
 
 			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
 
-			/*if(timerExpired(timerUart)){
-				//double pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
-				//double roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
-				//double tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw}; //, pitch, roll, 180};
-				double tmp[3] = {RFchannel.throttle, RFchannel.pitch, RFchannel.roll};
+			if(timerExpired(timerUart)){
+				//float pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
+				//float roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
+				float tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw}; //, pitch, roll, 180};
+				//float tmp[3] = {RFchannel.throttle, RFchannel.pitch, RFchannel.roll};
+				//float tmp[6] = {eulerAngles.roll, rollAcc, rollAccSINFIL};
 				sendUartMessage3Channels(tmp);
 				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
-			}*/
+			}
 		}
 		else{
 			fusionFlags = FusionAhrsGetFlags(&ahrs);
@@ -300,7 +313,6 @@ void App_Run (void)
 				gpioWrite(LED_1, LOW); // Indica que ahora arrancan las propelas
 			}
 		}
-
 		gpioWrite(LOOP_TIME_PIN, LOW);
 		while(!timerExpired(TS_timer));
 		timerStart(TS_timer, TIMER_MS2TICKS(1), TIM_MODE_SINGLESHOT, startI2CreadingCallBack);
@@ -311,30 +323,30 @@ void App_Run (void)
 		timerDelay(TIMER_MS2TICKS(250));
 	}
 }
-double referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{0}, {0}};
-double referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}, {0}, {0}, {0}};
+float referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{0}, {0}};
+float referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}, {0}, {0}, {0}};
 
 
-double Kx[KX_ROWS][KX_COLUMNS] = {
-		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000, -0.0000000},
-		{5.3098001, 0.5820865, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-		{-0.0000000, 0.0000000, 5.3098001, 0.5820865, 0.0000000, 0.0000000},
-		{0.0000000, 0.0000000, 0.0000000, 0.0000000, 3.0598114, 0.3570402}
+float Kx[KX_ROWS][KX_COLUMNS] = {
+	{0.0000000, -0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
+	{15.9074356, 1.0123648, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+	{-0.0000000, 0.0000000, 15.9074356, 1.0123648, -0.0000000, -0.0000000},
+	{0.0000000, 0.0000000, -0.0000000, -0.0000000, 9.1151589, 0.9652512}
 };
 
 
 
 
-double Ki[KI_ROWS][KI_COLUMNS] = {
-		{-0.0000000, -0.0000000},
-		{3.1334397, 0.0000000},
-		{-0.0000000, 3.1334397},
-		{-0.0000000, -0.0000000}
+float Ki[KI_ROWS][KI_COLUMNS] = {
+	{0.0000000, 0.0000000},
+	{5.3903525, -0.0000000},
+	{-0.0000000, 5.3903525},
+	{-0.0000000, 0.0000000}
 };
 
-void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U_PWM[4], EulerAngles * setPointAnglesPtr){
-	double statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}};
-	double outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
+void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, float U_PWM[4], EulerAngles * setPointAnglesPtr){
+	float statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}};
+	float outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	referenceIntegrator[0][0] = setPointAnglesPtr->roll * DEG2RAD;
 	referenceIntegrator[1][0] = setPointAnglesPtr->pitch * DEG2RAD;
 	bool saturation = integrateError(statesIntegrator, referenceIntegrator,
@@ -342,22 +354,21 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	gpioWrite(LED_6, saturation);
 
 
-	double outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR][1];
-	double statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {AnglesRates->roll_dot * DEG2RAD}, {Angles->pitch * DEG2RAD}, {AnglesRates->pitch_dot * DEG2RAD}, {Angles->yaw * DEG2RAD}, {AnglesRates->yaw_dot * DEG2RAD}};
+	float outputPropError[ROWS_PROPORTIONAL_ERROR_VECTOR][1];
+	float statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {AnglesRates->roll_dot * DEG2RAD}, {Angles->pitch * DEG2RAD}, {AnglesRates->pitch_dot * DEG2RAD}, {Angles->yaw * DEG2RAD}, {AnglesRates->yaw_dot * DEG2RAD}};
 	referenceProportional[0][0] = setPointAnglesPtr->roll * DEG2RAD;
 	referenceProportional[2][0] = setPointAnglesPtr->pitch * DEG2RAD;
 	proportionalError(statesProportional, referenceProportional,
 					  outputPropError);
 
-	double KxU[KX_ROWS][1];
-	double KiU[KI_ROWS][1];
+	float KxU[KX_ROWS][1];
+	float KiU[KI_ROWS][1];
 	denormalized_Kx_U_Values(Kx, outputPropError, KxU);
 	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
-	double U[4][1];
+	float U[4][1];
 	denormalized_U_total(KxU, KiU, U);
-	//U[0][0] = (double)getDataFromPC();
+	//U[0][0] = (float)getDataFromPC();
 	U[0][0] = RFchannel.throttle;
-	//U[0][0] = 3;
 	if(U[0][0] > 8){
 		gpioWrite(LED_2, HIGH);
 	}
@@ -367,8 +378,8 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, double U
 	U2PWM(U, U_PWM);
 }
 
-static double getU1fromSBUS(){
-	double linealFactor = 10;
+static float getU1fromSBUS(){
+	float linealFactor = 10;
 	if(sbus.channels[2] < 240.0)
 		return 0.0;
 	if(sbus.channels[2] > 1800.0)
@@ -400,23 +411,23 @@ static void getEulerAnglesRates(Gyro *GyroRates, EulerAngles* newAngles, EulerAn
 }
 
 
-static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, double Ts){
+static void getAnglesGyro(Gyro* GyroRates_rad, EulerAngles* newAngles, float Ts){
 
 	static EulerAngles lastAngle = {.roll = 0, .pitch = 0, .yaw = 0};
-	double phi_dot = GyroRates_rad->X +
+	float phi_dot = GyroRates_rad->X +
 					 GyroRates_rad->Y*arm_sin_f32(lastAngle.roll*DEG2RAD)*(arm_sin_f32(lastAngle.pitch*DEG2RAD)/arm_cos_f32(lastAngle.pitch*DEG2RAD)) +
 					 GyroRates_rad->Z*arm_cos_f32(lastAngle.roll*DEG2RAD)*(arm_sin_f32(lastAngle.pitch*DEG2RAD)/arm_cos_f32(lastAngle.pitch*DEG2RAD));
 
-	double theta_dot = GyroRates_rad->Y*arm_cos_f32(lastAngle.roll*DEG2RAD) -
+	float theta_dot = GyroRates_rad->Y*arm_cos_f32(lastAngle.roll*DEG2RAD) -
 					   GyroRates_rad->Z*arm_sin_f32(lastAngle.roll*DEG2RAD);
 
 	//psidot=(qsin(0)-rcos(0))*sec(1)
-	double psi_dot = (GyroRates_rad->Y*arm_sin_f32(lastAngle.roll*DEG2RAD) +
+	float psi_dot = (GyroRates_rad->Y*arm_sin_f32(lastAngle.roll*DEG2RAD) +
 					  GyroRates_rad->Z*arm_cos_f32(lastAngle.roll*DEG2RAD))/arm_cos_f32(lastAngle.pitch*DEG2RAD);
 
-	/*double phi_dot = GyroRates_rad->X;
-	double theta_dot = GyroRates_rad->Y;
-	double psi_dot = GyroRates_rad->Z;*/
+	/*float phi_dot = GyroRates_rad->X;
+	float theta_dot = GyroRates_rad->Y;
+	float psi_dot = GyroRates_rad->Z;*/
 
 	newAngles->roll = lastAngle.roll + Ts * phi_dot;
 	newAngles->pitch = lastAngle.pitch + Ts * theta_dot;
@@ -442,3 +453,14 @@ static void getEulerAnglesRatesFAST(Gyro *GyroRates, EulerAngles* newAngles, Eul
 					  GyroRates->Z*arm_cos_f32(newAngles->roll*DEG2RAD))/arm_cos_f32(newAngles->pitch*DEG2RAD);
 }
 
+// Function to calculate roll and pitch angles from accelerometer measurements
+void calcRollPitch(float accelX, float accelY, float accelZ, float *roll, float *pitch) {
+  // Calculate total acceleration vector magnitude
+  float accelMag = sqrt(accelX*accelX + accelY*accelY + accelZ*accelZ);
+
+  // Calculate pitch angle
+  *pitch = asin(-accelX / accelMag) * 180.0 / M_PI;
+
+  // Calculate roll angle
+  *roll = atan2(accelY, accelZ) * 180.0 / M_PI;
+}

@@ -30,7 +30,6 @@ RM := rm -rf
 -include source/subdir.mk
 -include SDK/startup/subdir.mk
 -include SDK/CMSIS/subdir.mk
--include subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -41,23 +40,37 @@ endif
 
 -include ../makefile.defs
 
+OPTIONAL_TOOL_DEPS := \
+$(wildcard ../makefile.defs) \
+$(wildcard ../makefile.init) \
+$(wildcard ../makefile.targets) \
+
+
+BUILD_ARTIFACT_NAME := TPQUAD
+BUILD_ARTIFACT_EXTENSION := axf
+BUILD_ARTIFACT_PREFIX :=
+BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
+
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: TPQUAD.axf
+all:
+	+@$(MAKE) --no-print-directory main-build && $(MAKE) --no-print-directory post-build
+
+# Main-build Target
+main-build: TPQUAD.axf
 
 # Tool invocations
-TPQUAD.axf: $(OBJS) $(USER_OBJS)
+TPQUAD.axf: $(OBJS) $(USER_OBJS) makefile objects.mk $(OPTIONAL_TOOL_DEPS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: MCU Linker'
-	arm-none-eabi-gcc -nostdlib -L"C:\Fran\ITBA\Sist. de control\Drone\Quadcopter\TPQUAD\SDK\CMSIS\DSP" -Xlinker -Map="TPQUAD.map" -Xlinker --gc-sections -Xlinker -print-memory-usage -Xlinker --sort-section=alignment -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -T "TPQUAD_Debug.ld" -o "TPQUAD.axf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-gcc -nostdlib -L"C:\Users\sch_b\OneDrive\Documentos\QUADCOPTER\Quadcopter\TPQUAD\SDK\CMSIS\DSP" -Xlinker -Map="TPQUAD.map" -Xlinker --gc-sections -Xlinker -print-memory-usage -Xlinker --sort-section=alignment -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -T "TPQUAD_Debug.ld" -o "TPQUAD.axf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
-	$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) TPQUAD.axf
+	-$(RM) TPQUAD.axf
 	-@echo ' '
 
 post-build:
@@ -65,6 +78,6 @@ post-build:
 	-arm-none-eabi-size "TPQUAD.axf"; # arm-none-eabi-objcopy -v -O binary "TPQUAD.axf" "TPQUAD.bin" ; # checksum -p MK64FN1M0xxx12 -d "TPQUAD.bin";
 	-@echo ' '
 
-.PHONY: all clean dependents post-build
+.PHONY: all clean dependents main-build post-build
 
 -include ../makefile.targets

@@ -41,7 +41,7 @@ void App_Init (void)
 }
 
 bool flag = 0;
-double speed[MOTOR_COUNT];
+float speed[MOTOR_COUNT];
 
 void DIMMER_PWM(){
     speed[0] = speed[0] + 0.0001 > 1.0 ? 1.0 : speed[0] + 0.0001;

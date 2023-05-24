@@ -25,17 +25,27 @@ a = [1.0000000, -1.95649524036026867257476169470464810729 ,  0.99163474375983662
 printMatrixAsCcode(b);
 printMatrixAsCcode(a);
  
+b = SOS(:, 1:3);
+b(1,:) = b(1,:) * G(1);
+b(2,:) = b(2,:) * G(2);
+b(3,:) = b(3,:) * G(3);
+%b(4,:) = b(4,:) * G(4);
+%b(5,:) = b(5,:) * G(5);
+a = SOS(:, 4:6);
+
 Ts = 1/1000;
 H1 = tf(b(1, :), a(1, :), Ts);    
 H2 = tf(b(2, :), a(2, :), Ts); 
 H3 = tf(b(3, :), a(3, :), Ts); 
-H4 = tf(b(4, :), a(4, :), Ts); 
-H5 = tf(b(5, :), a(5, :), Ts); 
-H = H1*H2*H3*H4*H5;
+%H4 = tf(b(4, :), a(4, :), Ts); 
+%H5 = tf(b(5, :), a(5, :), Ts); 
+H = H1*H2*H3*G(4);%*H4*H5*G(4);
 opts = bodeoptions;
 %opts.YLim = [-25, 5];
 opts.FreqUnits = 'Hz';
 bode(H, opts);
+printMatrixAsCcode(b);
+printMatrixAsCcode(a);
 %% Matlab matrix to C code
 function printMatrixAsCcode(A)
     fprintf("double A[%d][%d] = {\n", size(A, 1), size(A, 2));

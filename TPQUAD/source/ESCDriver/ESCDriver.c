@@ -154,11 +154,11 @@ void ESCInit(){
 
 /**
  * @brief Setea la velocidad de los motores
- * @param spped: Arreglo con las velocidades de cada motor. double de 0.0 a 1.0.
+ * @param spped: Arreglo con las velocidades de cada motor. float de 0.0 a 1.0.
  * 				Valor negativo desarma el motor. Valor mayor tiene comportamiento indeterminado
 */
 
-void ESCSetSpeed(double speed[MOTOR_COUNT]) {
+void ESCSetSpeed(float speed[MOTOR_COUNT]) {
 	FTM_Type* const pFTM = FTMPtrs[ESC_FTM_MOD];
 
 	uint16_t max = 0;
@@ -184,7 +184,7 @@ void ESCSetSpeed(double speed[MOTOR_COUNT]) {
 */
 void ESCArm() {
 
-	double speed[MOTOR_COUNT];
+	float speed[MOTOR_COUNT];
 
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
 		speed[i] = 0.0;
@@ -197,7 +197,7 @@ void ESCArm() {
  * @brief Desrma los motores.
 */
 void ESCDisarm() {
-	double speed[MOTOR_COUNT];
+	float speed[MOTOR_COUNT];
 
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
 		speed[i] = ESC_DISARM_SPEED;
@@ -213,7 +213,7 @@ void ESCCalibrate() {
 
 	timerInit();
 
-	double speed[MOTOR_COUNT];
+	float speed[MOTOR_COUNT];
 
 	for (uint8_t i = 0; i < MOTOR_COUNT; i++)  {
 		speed[i] = 1.0;
