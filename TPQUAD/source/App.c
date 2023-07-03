@@ -29,6 +29,7 @@ typedef struct{
 	float yaw_dot;
 }EulerAnglesRates;
 
+	float U[4][1];
 
 #define UART_ID			0
 #define UART_BAUDRATE	115200
@@ -71,6 +72,10 @@ BiQuad filter_roll_dot_stgs[5];
 BiQuad filter_pitch_dot_stgs[5];
 BiQuad filter_yaw_dot_stgs[5];
 
+BiQuad filter_acc_x;
+BiQuad filter_acc_y;
+BiQuad filter_acc_z;
+
 bool flagBorrable = false;
  
 EulerAnglesRates lastRates;
@@ -80,7 +85,7 @@ OrientationRF RFchannel;
 static char strChannels[100];
 static void sendUartMessage3Channels(float* msg1)
 {
-	uint16_t charCount= sprintf(strChannels, "%.1f, %.1f, %.1f \r\n",
+	uint16_t charCount= sprintf(strChannels, "%.2f, %.2f, %.1f \r\n",
 						msg1[0], msg1[1], msg1[2]);
 	uartWriteMsg(UART_ID, strChannels, charCount);
 }
@@ -147,6 +152,9 @@ float a[5][3] = {
 		{1.0000000, -1.9463388, 0.9479047}
 };
 
+float b_acc[3] = {1.0e-04*0.2463, 1.0e-04*0.4926, 1.0e-04*0.2463};
+float a_acc[3] = {1.0000, -1.9859, 0.9860};
+
 	for (uint8_t i = 0; i < 5; i++)
 	{
 		BiQuad_init(&filter_pitch_dot_stgs[i], b[i], a[i]);
@@ -154,7 +162,9 @@ float a[5][3] = {
 		BiQuad_init(&filter_yaw_dot_stgs[i], b[i], a[i]);
 	}
 	
-
+	BiQuad_init(&filter_acc_x, b_acc, a_acc);
+	BiQuad_init(&filter_acc_y, b_acc, a_acc);
+	BiQuad_init(&filter_acc_z, b_acc, a_acc);
 	//controlPCInit(UART_ID, UART_BAUDRATE,'W','S');
 
 
@@ -171,6 +181,22 @@ static void startI2C_ACCELEROMETER_CallBack(){
 }
 void App_Run (void)
 {
+	/*  TEST DE CONTROL
+	// ########## TEST #############
+	{
+		EulerAngles Angles = {0.5, 2, 2};
+		EulerAnglesRates AnglesRates = {2, 2, 2};
+		float U_PWM[4];
+		EulerAngles setPointAnglesPtr = {-2, 0, 1};
+		for(uint16_t i = 0; i < 3000; i++){
+			runControlStep(&Angles, &AnglesRates, U_PWM, &setPointAnglesPtr);
+		}
+
+	}
+	while(1);
+	// #############################
+	*/
+
 	timerInit();
 	tim_id_t TS_timer;
 	TS_timer = timerGetId();
@@ -252,10 +278,15 @@ void App_Run (void)
 		Gyro sampleGyro = gyroData;// Esto es peligroso porque asume que el ultimo timer que se lanzo aun el I2C no le transmitio
 		Acc sampleAcc = accelData;// Esto es peligroso porque asume que el ultimo timer que se lanzo aun el I2C no le transmitio
 
+		Acc filteredAcc; 
+		filteredAcc.X =  BiQuad_filter(&filter_acc_x, sampleAcc.X);
+		filteredAcc.Y =  BiQuad_filter(&filter_acc_y, sampleAcc.Y);
+		filteredAcc.Z =  BiQuad_filter(&filter_acc_z, sampleAcc.Z);
+
 		// ================== Observador de Estados ========================
 
         const FusionVector gyroscope = {.axis.x =  sampleGyro.X, .axis.y = sampleGyro.Y, .axis.z = sampleGyro.Z}; // replace this with actual gyroscope data in degrees/s
-        const FusionVector accelerometer = {.axis.x = sampleAcc.X, .axis.y = sampleAcc.Y, .axis.z = sampleAcc.Z}; // replace this with actual accelerometer data in g
+        const FusionVector accelerometer = {.axis.x = filteredAcc.X, .axis.y = filteredAcc.Y, .axis.z = filteredAcc.Z}; // replace this with actual accelerometer data in g
 
         FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, 1e-3);
 
@@ -302,6 +333,8 @@ void App_Run (void)
 				float tmp[3] = {eulerAngles.roll, eulerAngles.pitch, eulerAngles.yaw}; //, pitch, roll, 180};
 				//float tmp[3] = {RFchannel.throttle, RFchannel.pitch, RFchannel.roll};
 				//float tmp[6] = {eulerAngles.roll, rollAcc, rollAccSINFIL};
+				//float tmp[3] = {filteredAcc.Z, sampleAcc.Z};
+				//float tmp[3] = {U[1][0], U[2][0], U[3][0]};
 				sendUartMessage3Channels(tmp);
 				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
 			}
@@ -323,34 +356,36 @@ void App_Run (void)
 		timerDelay(TIMER_MS2TICKS(250));
 	}
 }
-float referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{0}, {0}};
+float referenceIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{0}, {0}, {0}};
 float referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0}, {0}, {0}, {0}};
 
 
 float Kx[KX_ROWS][KX_COLUMNS] = {
-	{0.0000000, -0.0000000, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
-	{15.9074356, 1.0123648, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-	{-0.0000000, 0.0000000, 15.9074356, 1.0123648, -0.0000000, -0.0000000},
-	{0.0000000, 0.0000000, -0.0000000, -0.0000000, 9.1151589, 0.9652512}
+	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
+	{5.3098001, 0.5820865, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
+	{0.0000000, -0.0000000, 5.3098001, 0.5820865, 0.0000000, 0.0000000},
+	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 3.4012730, 0.3621458}
 };
 
 
 
 
 float Ki[KI_ROWS][KI_COLUMNS] = {
-	{0.0000000, 0.0000000},
-	{5.3903525, -0.0000000},
-	{-0.0000000, 5.3903525},
-	{-0.0000000, 0.0000000}
+	{0.0000000, 0.0000000, 0.0000000},
+	{3.1334397, 0.0000000, 0.0000000},
+	{-0.0000000, 3.1334397, -0.0000000},
+	{0.0000000, -0.0000000, 3.0583524}
 };
 
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, float U_PWM[4], EulerAngles * setPointAnglesPtr){
-	float statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}};
+	float statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}, {Angles->yaw * DEG2RAD}};
 	float outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	referenceIntegrator[0][0] = setPointAnglesPtr->roll * DEG2RAD;
 	referenceIntegrator[1][0] = setPointAnglesPtr->pitch * DEG2RAD;
+	referenceIntegrator[2][0] = setPointAnglesPtr->yaw * DEG2RAD;
+	float Ki_lim[3] = {Ki[1][0], Ki[2][1], Ki[3][2]};
 	bool saturation = integrateError(statesIntegrator, referenceIntegrator,
-				   1e-3, outputIntError, Ki[1][0]);
+				   1e-3, outputIntError, Ki_lim);
 	gpioWrite(LED_6, saturation);
 
 
@@ -358,6 +393,7 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, float U_
 	float statesProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {AnglesRates->roll_dot * DEG2RAD}, {Angles->pitch * DEG2RAD}, {AnglesRates->pitch_dot * DEG2RAD}, {Angles->yaw * DEG2RAD}, {AnglesRates->yaw_dot * DEG2RAD}};
 	referenceProportional[0][0] = setPointAnglesPtr->roll * DEG2RAD;
 	referenceProportional[2][0] = setPointAnglesPtr->pitch * DEG2RAD;
+	referenceProportional[4][0] = setPointAnglesPtr->yaw * DEG2RAD;
 	proportionalError(statesProportional, referenceProportional,
 					  outputPropError);
 
@@ -365,7 +401,6 @@ void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, float U_
 	float KiU[KI_ROWS][1];
 	denormalized_Kx_U_Values(Kx, outputPropError, KxU);
 	denormalized_Ki_U_Values(Ki, outputIntError, KiU);
-	float U[4][1];
 	denormalized_U_total(KxU, KiU, U);
 	//U[0][0] = (float)getDataFromPC();
 	U[0][0] = RFchannel.throttle;

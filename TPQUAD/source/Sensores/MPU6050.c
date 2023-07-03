@@ -30,7 +30,7 @@ enum Mscale {
 static const uint16_t DPS_SCALE[] = {250, 500, 1000, 2000};
 static const uint16_t G_SCALE[] = {2, 4, 8, 16};
 
-static uint8_t Ascale = AFS_2G;     // AFS_2G, AFS_4G, AFS_8G, AFS_16G
+static uint8_t Ascale = AFS_8G;     // AFS_2G, AFS_4G, AFS_8G, AFS_16G
 static uint8_t Gscale = GFS_500DPS; // GFS_250DPS, GFS_500DPS, GFS_1000DPS, GFS_2000DPS
 
 static uint8_t writeBuffer[4];

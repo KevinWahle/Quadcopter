@@ -6,17 +6,17 @@
 
 #include <stdbool.h>
 
-#define ROWS_INTEGRATOR_ERROR_VECTOR 2
+#define ROWS_INTEGRATOR_ERROR_VECTOR 3
 #define ROWS_PROPORTIONAL_ERROR_VECTOR 6
 
 #define KX_ROWS 4
 #define KX_COLUMNS 6
 
 #define KI_ROWS 4
-#define KI_COLUMNS 2
+#define KI_COLUMNS 3
 
 bool integrateError(float newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], float reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
-					float Ts, float output[ROWS_INTEGRATOR_ERROR_VECTOR][1], float KiVal);
+					float Ts, float output[ROWS_INTEGRATOR_ERROR_VECTOR][1], float KiVal[ROWS_INTEGRATOR_ERROR_VECTOR]);
 
 void proportionalError(float newStates[ROWS_PROPORTIONAL_ERROR_VECTOR][1], float reference[ROWS_PROPORTIONAL_ERROR_VECTOR][1],
 					   float output[ROWS_PROPORTIONAL_ERROR_VECTOR][1]);

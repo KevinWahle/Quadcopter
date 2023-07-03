@@ -33,28 +33,9 @@ step(filter_obj);
 title('Step Response of Discrete Filter');
 xlabel('Samples');
 ylabel('Amplitude');
-%% ACA HAGO TODO
-filterAccelerometer = filterAcc()
-[b, a] = sos2tf(filterAccelerometer.sosMatrix);
-b = 2.4628e-05*b
-filter_obj = tf(b, a, 1/1000);
-opts = bodeoptions;
-opts.FreqUnits = 'Hz';
-opts.FreqScale = 'linear';
-% Plot the Bode plot
-figure;
-bode(filter_obj, opts);
-%title('Bode Plot of First-Order Low-Pass Filter');
-%step(filter_obj)
-
 %%
-noise = randn(3000, 1);
-signal = noise + 4;
-filtered_signal = filter(b, a, signal);
-plot(signal)
-hold on
-plot(filtered_signal)
-
+filterAccelerometer = filterAcc()
+[num, den] = sos2tf(filterAcc);
 
 %%
 syms theta phi psi

@@ -8,7 +8,8 @@
 #define TOTAL_N_FORCE_TRIGGER 	1  // Recien a partir de [TOTAL_N_FORCE_TRIGGER]N empieza a prender los motores 
 // Defino que el ajuste por integral no puede ser mayor a 1N de diferencia
 
-#define MAX_INTEGRAL_ERROR_NEWTON	0.5    // 0.2 Newton
+#define MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL	0.5    // 0.2 Newton
+#define MAX_INTEGRAL_ERROR_NEWTORN_YAW 			1  // 1 Newton Heuristico
 
 static const float coeffPoly[3] = COEFF_POLY;
 
@@ -19,18 +20,22 @@ static float poly(float Force);
  *  newStates un vector de [phi_k, theta_k]
  */
 bool integrateError(float newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], float reference[ROWS_INTEGRATOR_ERROR_VECTOR][1],
-					float Ts, float output[ROWS_INTEGRATOR_ERROR_VECTOR][1], float KiVal){
+					float Ts, float output[ROWS_INTEGRATOR_ERROR_VECTOR][1], float KiVal[ROWS_INTEGRATOR_ERROR_VECTOR]){
 	bool saturation = false;
 	float sub[ROWS_INTEGRATOR_ERROR_VECTOR][1];
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, newStates, '-', reference, sub);
 	scalar_mult(ROWS_INTEGRATOR_ERROR_VECTOR, 1, Ts, sub);
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, lastIntegrateError, '+', sub, output);
-	if(output[0][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal || output[0][0] < -MAX_INTEGRAL_ERROR_NEWTON/KiVal){
-		output[0][0] = output[0][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON/KiVal : -MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+	if(output[0][0] > MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0] || output[0][0] < -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0]){
+		output[0][0] = output[0][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0] : -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0];
 		saturation = true;
 	}
-	if(output[1][0] > MAX_INTEGRAL_ERROR_NEWTON/KiVal || output[1][0] < -MAX_INTEGRAL_ERROR_NEWTON/KiVal){
-		output[1][0] = output[1][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON/KiVal : -MAX_INTEGRAL_ERROR_NEWTON/KiVal;
+	if(output[1][0] > MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1] || output[1][0] < -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1]){
+		output[1][0] = output[1][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1] : -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1];
+		saturation = true;
+	}
+	if(output[2][0] > MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2] || output[2][0] < -MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2]){
+		output[2][0] = output[2][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2] : -MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2];
 		saturation = true;
 	}
 	memcpy(lastIntegrateError, output, sizeof(float)*ROWS_INTEGRATOR_ERROR_VECTOR);
@@ -47,7 +52,7 @@ void denormalized_Kx_U_Values(float Kx[KX_ROWS][KX_COLUMNS], float input[ROWS_PR
 	matrix_mult(KX_ROWS, KX_COLUMNS, 1, Kx, input, output);
 }
 void denormalized_Ki_U_Values(float Ki[KI_ROWS][KI_COLUMNS], float input[ROWS_INTEGRATOR_ERROR_VECTOR][1], float output[4][1]){
-	matrix_mult(KI_ROWS, KI_COLUMNS, 1, Ki, input, output);
+	matrix_mult(KI_ROWS, ROWS_INTEGRATOR_ERROR_VECTOR, 1, Ki, input, output);
 }
 
 void denormalized_U_total(float outKx[KX_ROWS][1], float outKi[KI_ROWS][1], float output[KX_ROWS][1]){
