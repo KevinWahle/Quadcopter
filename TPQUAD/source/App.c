@@ -137,23 +137,23 @@ float a[5][3] = {
 };
 */
 
-float b[5][3] = {
-		{0.0087849, 0.0175698, 0.0087849},
-		{0.0071376, 0.0142751, 0.0071376},
-		{0.0045431, 0.0090861, 0.0045431},
-		{0.0019735, 0.0039470, 0.0019735},
-		{0.0003915, 0.0007830, 0.0003915}
-};
-float a[5][3] = {
-		{1.0000000, -1.9564952, 0.9916347},
-		{1.0000000, -1.9473261, 0.9758764},
-		{1.0000000, -1.9444096, 0.9625818},
-		{1.0000000, -1.9450646, 0.9529586},
-		{1.0000000, -1.9463388, 0.9479047}
-};
+	float b[5][3] = {
+			{0.0087849, 0.0175698, 0.0087849},
+			{0.0071376, 0.0142751, 0.0071376},
+			{0.0045431, 0.0090861, 0.0045431},
+			{0.0019735, 0.0039470, 0.0019735},
+			{0.0003915, 0.0007830, 0.0003915}
+	};
+	float a[5][3] = {
+			{1.0000000, -1.9564952, 0.9916347},
+			{1.0000000, -1.9473261, 0.9758764},
+			{1.0000000, -1.9444096, 0.9625818},
+			{1.0000000, -1.9450646, 0.9529586},
+			{1.0000000, -1.9463388, 0.9479047}
+	};
 
-float b_acc[3] = {1.0e-04*0.2463, 1.0e-04*0.4926, 1.0e-04*0.2463};
-float a_acc[3] = {1.0000, -1.9859, 0.9860};
+	float b_acc[3] = {1.0e-04*0.2463, 1.0e-04*0.4926, 1.0e-04*0.2463};
+	float a_acc[3] = {1.0000, -1.9859, 0.9860};
 
 	for (uint8_t i = 0; i < 5; i++)
 	{
@@ -221,9 +221,9 @@ void App_Run (void)
 
 	gpioWrite(LED_1, HIGH); // Calibrations Start
 	ESCInit();
-	//ESCCalibrate();
+	ESCCalibrate();
 //========================== RF init ===================================
-	/*RFinit();
+	RFinit();
 	RFbegin();
 	gpioWrite(LED_3, HIGH); // Calibration RF starts
 	timerDelay(TIMER_MS2TICKS(10));
@@ -310,23 +310,26 @@ void App_Run (void)
 			eulerRates.roll_dot = BiQuad_filter(&filter_roll_dot_stgs[i], eulerRates.roll_dot);
 			eulerRates.pitch_dot = BiQuad_filter(&filter_pitch_dot_stgs[i], eulerRates.pitch_dot);
 			eulerRates.yaw_dot = BiQuad_filter(&filter_yaw_dot_stgs[i], eulerRates.yaw_dot);
+			//sampleGyro.X = BiQuad_filter(&filter_roll_dot_stgs[i], sampleGyro.X);
+			//sampleGyro.Y = BiQuad_filter(&filter_pitch_dot_stgs[i], sampleGyro.Y);
+			//sampleGyro.Z = BiQuad_filter(&filter_yaw_dot_stgs[i], sampleGyro.Z);
 		}
 		
         // ==================================================================
 		if(initialising == false){     // si ya inicializo, corro el sistema de control
-			//RFgetDeNormalizedData(&RFchannel);
-			//RF2Newton(&RFchannel);
+			RFgetDeNormalizedData(&RFchannel);
+			RF2Newton(&RFchannel);
 			//EulerAngles anglesSetPoint = {.pitch = RFchannel.pitch, .roll = RFchannel.roll, .yaw = RFchannel.yaw};
 			EulerAngles anglesSetPoint = {0.0, 0.0, 0.0};
 			runControlStep(&eulerAngles, &eulerRates, speed, &anglesSetPoint);
-			speed[0] = 0.2;
-			speed[1] = 0.2;
-			speed[2] = 0.2;
-			speed[3] = 0.2;
+			//speed[0] = RFchannel.throttle/12.0;
+			//speed[1] = RFchannel.throttle/12.0;
+			//speed[2] = RFchannel.throttle/12.0;
+			//speed[3] = RFchannel.throttle/12.0;
 			ESCSetSpeed(speed);
 
 			//getAnglesGyro(&sampleGyro, &AnglesIntegrated, 1e-3);
-
+/*
 			if(timerExpired(timerUart)){
 				//float pitch = atan2(-sampleAcc.X, sqrt(pow(sampleAcc.Y , 2)+ pow(sampleAcc.Z, 2)))*RAD2DEG;
 				//float roll = atan2(sampleAcc.Y, sampleAcc.Z)*RAD2DEG;
@@ -335,9 +338,11 @@ void App_Run (void)
 				//float tmp[6] = {eulerAngles.roll, rollAcc, rollAccSINFIL};
 				//float tmp[3] = {filteredAcc.Z, sampleAcc.Z};
 				//float tmp[3] = {U[1][0], U[2][0], U[3][0]};
+				//float tmp[3] = {eulerRates.roll_dot, eulerRates.pitch_dot, eulerRates.yaw_dot};
+				//float tmp[3] = {sampleGyro.X, sampleGyro.Y, sampleGyro.Z};
 				sendUartMessage3Channels(tmp);
 				timerStart(timerUart, TIMER_MS2TICKS(15), TIM_MODE_SINGLESHOT, NULL);
-			}
+			}*/
 		}
 		else{
 			fusionFlags = FusionAhrsGetFlags(&ahrs);
@@ -361,22 +366,17 @@ float referenceProportional[ROWS_PROPORTIONAL_ERROR_VECTOR][1] = {{0}, {0}, {0},
 
 
 float Kx[KX_ROWS][KX_COLUMNS] = {
-	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000},
-	{5.3098001, 0.5820865, -0.0000000, -0.0000000, 0.0000000, 0.0000000},
-	{0.0000000, -0.0000000, 5.3098001, 0.5820865, 0.0000000, 0.0000000},
-	{0.0000000, 0.0000000, 0.0000000, 0.0000000, 3.4012730, 0.3621458}
-};
-
-
-
-
+		{0.0000000, -0.0000000, 0.0000000, -0.0000000, -0.0000000, 0.0000000},
+		{4.4826709, 1.1185647, 0.0000000, 0.0000000, -0.0000000, -0.0000000},
+		{0.0000000, 0.0000000, 4.4826709, 1.1185647, -0.0000000, -0.0000000},
+		{-0.0000000, -0.0000000, -0.0000000, -0.0000000, 5.2478250, 0.9446174}
+	};
 float Ki[KI_ROWS][KI_COLUMNS] = {
-	{0.0000000, 0.0000000, 0.0000000},
-	{3.1334397, 0.0000000, 0.0000000},
-	{-0.0000000, 3.1334397, -0.0000000},
-	{0.0000000, -0.0000000, 3.0583524}
-};
-
+		{-0.0000000, -0.0000000, -0.0000000},
+		{3.8049569, 0.0000000, -0.0000000},
+		{-0.0000000, 3.8049569, -0.0000000},
+		{-0.0000000, -0.0000000, 3.5374992}
+	};
 void runControlStep(EulerAngles *Angles, EulerAnglesRates *AnglesRates, float U_PWM[4], EulerAngles * setPointAnglesPtr){
 	float statesIntegrator[ROWS_INTEGRATOR_ERROR_VECTOR][1] = {{Angles->roll * DEG2RAD}, {Angles->pitch * DEG2RAD}, {Angles->yaw * DEG2RAD}};
 	float outputIntError[ROWS_INTEGRATOR_ERROR_VECTOR][1];

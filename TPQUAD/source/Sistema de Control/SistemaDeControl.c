@@ -28,11 +28,11 @@ bool integrateError(float newStates[ROWS_INTEGRATOR_ERROR_VECTOR][1], float refe
 	matrix_add_sub(ROWS_INTEGRATOR_ERROR_VECTOR, 1, lastIntegrateError, '+', sub, output);
 	if(output[0][0] > MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0] || output[0][0] < -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0]){
 		output[0][0] = output[0][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0] : -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[0];
-		saturation = true;
+		//saturation = true;
 	}
 	if(output[1][0] > MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1] || output[1][0] < -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1]){
 		output[1][0] = output[1][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1] : -MAX_INTEGRAL_ERROR_NEWTON_THETA_ROLL/KiVal[1];
-		saturation = true;
+		//saturation = true;
 	}
 	if(output[2][0] > MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2] || output[2][0] < -MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2]){
 		output[2][0] = output[2][0] > 0 ? MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2] : -MAX_INTEGRAL_ERROR_NEWTORN_YAW/KiVal[2];
